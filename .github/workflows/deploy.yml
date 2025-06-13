@@ -1,0 +1,56 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]  # Only on successful merges to main
+    tags: [ 'v*' ]     # Or on version tags
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Only run on merge commits to main or version tags
+    if: |
+      (github.ref == 'refs/heads/main' && 
+       (contains(github.event.head_commit.message, 'Merge pull request') || 
+        contains(github.event.head_commit.message, 'Merge branch') || 
+        contains(github.event.head_commit.message, '#'))) || 
+      startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install Composer Dependencies
+      run: composer install --optimize-autoloader --no-dev
+
+    - name: Install NPM Dependencies
+      run: npm ci
+
+    - name: Build Production Assets
+      run: npm run build
+
+    - name: Create deployment artifact
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: tar -czf "${GITHUB_SHA}".tar.gz --exclude=*.git --exclude=node_modules --exclude=tests *
+
+    - name: Store artifact for distribution
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-build
+        path: ${{ github.sha }}.tar.gz
+
+    # Add your deployment steps here
+    # - name: Deploy to server
+    #   run: echo "Add your deployment commands here"
