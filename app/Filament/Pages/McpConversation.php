@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Events\McpConversationMessage;
 use App\Models\McpConnection;
 use App\Services\McpClient;
 use Filament\Actions\Action;
@@ -71,6 +72,28 @@ class McpConversation extends Page implements HasForms
         $this->conversation = [];
         $this->form->fill();
         $this->loadAvailableConnections();
+    }
+
+    public function handleIncomingMessage($data): void
+    {
+        // Add message to conversation if it's for the current connection
+        if (isset($data['connection_id']) &&
+            $data['connection_id'] == ($this->data['selectedConnection'] ?? null)) {
+
+            $this->conversation[] = $data['message'];
+
+            // Dispatch browser event to scroll to bottom
+            $this->dispatch('conversation-updated');
+        }
+    }
+
+    public function getListeners(): array
+    {
+        $userId = auth()->id() ?? 1;
+
+        return [
+            "echo:mcp-conversations.{$userId},conversation.message" => 'handleIncomingMessage',
+        ];
     }
 
     public function form(Schema $schema): Schema
@@ -145,11 +168,19 @@ class McpConversation extends Page implements HasForms
             $client = new McpClient($connection);
 
             // Add user message to conversation
-            $this->conversation[] = [
+            $userMessage = [
                 'role' => 'user',
                 'content' => $formData['message'],
                 'timestamp' => now()->toISOString(),
             ];
+            $this->conversation[] = $userMessage;
+
+            // Broadcast user message
+            McpConversationMessage::dispatch(
+                auth()->user() ?? \App\Models\User::first(),
+                $connection,
+                $userMessage
+            );
 
             // Send conversation to Claude Code
             $response = $client->executeConversation([
@@ -159,18 +190,34 @@ class McpConversation extends Page implements HasForms
                 ],
             ]);
 
+            Log::info('MCP Response received', ['response' => $response]);
+
             if (isset($response['error'])) {
-                $this->conversation[] = [
+                $errorMessage = [
                     'role' => 'error',
                     'content' => 'Error: '.$response['error'],
                     'timestamp' => now()->toISOString(),
                 ];
+                $this->conversation[] = $errorMessage;
+
+                // Broadcast error message
+                McpConversationMessage::dispatch(
+                    auth()->user() ?? \App\Models\User::first(),
+                    $connection,
+                    $errorMessage
+                );
             } else {
-                $this->conversation[] = [
+                // Handle both direct content and result.content formats
+                $content = $response['content'] ?? $response['result']['content'] ?? 'No response content';
+
+                $assistantMessage = [
                     'role' => 'assistant',
-                    'content' => $response['content'] ?? 'No response content',
+                    'content' => $content,
                     'timestamp' => now()->toISOString(),
                 ];
+                $this->conversation[] = $assistantMessage;
+
+                // Broadcasting is handled by McpClient for assistant messages
             }
 
             $this->data['message'] = '';

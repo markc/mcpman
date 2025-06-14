@@ -29,6 +29,8 @@ class McpDashboard extends Page
     public function getWidgets(): array
     {
         return [
+            \App\Filament\Widgets\McpConnectionStatsWidget::class,
+            \App\Filament\Widgets\McpServerStatusWidget::class,
             McpStatsWidget::class,
             McpConnectionsWidget::class,
         ];
