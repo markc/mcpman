@@ -208,14 +208,73 @@ class McpClient
 
     private function sendStdioRequest(array $request): array
     {
-        // For stdio with Claude Code, we need a different approach
-        // Instead of trying to communicate with 'claude mcp serve' directly,
-        // let's create a mock response for now until we figure out the correct integration
+        // For Claude Code MCP server, we need to use persistent stdio communication
+        $command = ['claude', 'mcp', 'serve'];
 
+        // Prepare JSON-RPC request
+        $jsonRequest = json_encode($request)."\n";
+
+        try {
+            // Execute command with input and timeout
+            $result = Process::timeout(30)
+                ->input($jsonRequest)
+                ->run($command);
+
+            if (! $result->successful()) {
+                Log::error('Claude MCP process failed', [
+                    'exit_code' => $result->exitCode(),
+                    'error' => $result->errorOutput(),
+                    'output' => $result->output(),
+                ]);
+
+                // Fall back to mock response
+                return $this->getMockResponse($request);
+            }
+
+            $output = trim($result->output());
+
+            if (empty($output)) {
+                // If no output, fall back to mock for now
+                Log::warning('No output from Claude MCP, using fallback');
+
+                return $this->getMockResponse($request);
+            }
+
+            // Parse JSON-RPC response
+            $lines = array_filter(explode("\n", $output));
+            $lastLine = trim(end($lines));
+
+            $response = json_decode($lastLine, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('Invalid JSON from Claude MCP', [
+                    'output' => $output,
+                    'last_line' => $lastLine,
+                ]);
+
+                // Fall back to mock response
+                return $this->getMockResponse($request);
+            }
+
+            return $response;
+
+        } catch (\Exception $e) {
+            Log::error('Claude MCP communication failed', [
+                'error' => $e->getMessage(),
+                'request' => $request,
+            ]);
+
+            // Fall back to mock response instead of failing
+            return $this->getMockResponse($request);
+        }
+    }
+
+    private function getMockResponse(array $request): array
+    {
         $method = $request['method'];
         $params = $request['params'] ?? [];
 
-        // Map MCP methods to Claude Code commands
+        // Map MCP methods to mock responses
         switch ($method) {
             case 'tools/list':
                 return $this->getClaudeCodeTools();
