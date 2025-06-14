@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreignId('claimed_by_user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('claimed_at')->nullable();
             $table->timestamps();
-            
+
             $table->index(['project_id', 'status']);
             $table->index('claimed_by_user_id');
         });

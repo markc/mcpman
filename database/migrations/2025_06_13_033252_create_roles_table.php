@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->json('permissions')->nullable();
             $table->timestamps();
-            
+
             $table->index('slug');
         });
     }

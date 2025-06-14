@@ -20,9 +20,10 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamp('last_used_at')->nullable();
             $table->timestamp('expires_at')->nullable();
+            $table->integer('usage_count')->default(0);
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
-            
+
             $table->index(['key', 'is_active']);
             $table->index('user_id');
         });

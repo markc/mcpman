@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
 
 class ApiKey extends Model
@@ -19,6 +19,7 @@ class ApiKey extends Model
         'is_active',
         'last_used_at',
         'expires_at',
+        'usage_count',
         'user_id',
     ];
 
@@ -44,7 +45,7 @@ class ApiKey extends Model
         return $query->where('is_active', true)
             ->where(function ($q) {
                 $q->whereNull('expires_at')
-                  ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>', now());
             });
     }
 
@@ -58,8 +59,20 @@ class ApiKey extends Model
         $this->update(['last_used_at' => now()]);
     }
 
+    public function recordUsage(): void
+    {
+        $this->increment('usage_count');
+        $this->update(['last_used_at' => now()]);
+    }
+
+    public function isValid(): bool
+    {
+        return $this->is_active &&
+               ($this->expires_at === null || $this->expires_at->isFuture());
+    }
+
     public static function generateKey(): string
     {
-        return 'mcp_' . Str::random(40);
+        return 'mcp_'.Str::random(40);
     }
 }

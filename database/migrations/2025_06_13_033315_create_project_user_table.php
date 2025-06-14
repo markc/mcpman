@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('role_id')->constrained()->onDelete('cascade');
             $table->timestamp('joined_at')->useCurrent();
             $table->timestamps();
-            
+
             $table->unique(['project_id', 'user_id']);
             $table->index(['project_id', 'role_id']);
         });

@@ -135,6 +135,68 @@ This application provides a Model Context Protocol (MCP) server for data managem
 - Connection status tracking and error logging
 - Relationships: user (owner)
 
+## Filament v4 Form Patterns
+
+**⚠️ CRITICAL: Use these exact patterns for ALL Filament v4 forms to avoid namespace and component errors:**
+
+### Resource Forms (app/Filament/Resources/*/Resource.php)
+```php
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\KeyValue;
+// DO NOT import Grid or Section for forms
+
+public static function form(Schema $schema): Schema
+{
+    return $schema
+        ->components([
+            TextInput::make('name')->required(),
+            Select::make('status')->options([...])->required(),
+            Textarea::make('description')->columnSpanFull(),
+            KeyValue::make('metadata')->columnSpanFull(),
+        ])
+        ->columns(2); // Creates 2-column grid layout
+}
+```
+
+### Page Forms (app/Filament/Pages/*.php)
+```php
+use Filament\Forms\Form;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\KeyValue;
+// DO NOT import Grid or Section for forms
+
+public function conversationForm(Form $form): Form
+{
+    return $form
+        ->schema($this->getFormSchema())
+        ->statePath('data')
+        ->columns(2); // Creates 2-column grid layout
+}
+
+protected function getFormSchema(): array
+{
+    return [
+        Select::make('connection')->required(),
+        Select::make('tool')->nullable(),
+        Textarea::make('message')->required()->columnSpanFull(),
+        KeyValue::make('arguments')->columnSpanFull(),
+    ];
+}
+```
+
+### Key Rules:
+1. **Resources**: Use `Schema $schema` and `->components([])`, NOT `Form $form` and `->schema([])`
+2. **Pages**: Use `Form $form` and `->schema([])`, NOT `Schema $schema` and `->components([])`
+3. **Grid Layout**: Use `->columns(2)` method, NOT `Grid::make(2)->schema([])`
+4. **Full Width**: Use `->columnSpanFull()` on components, NOT Grid wrappers
+5. **NO Grid/Section**: Never import `Filament\Schemas\Components\Grid` or `Filament\Schemas\Components\Section` for forms
+6. **Form Components**: Always use `Filament\Forms\Components\*` for form inputs
+
 ## Documentation
 
 For detailed information about the MCP integration and usage, see the comprehensive documentation in the `docs/` folder:

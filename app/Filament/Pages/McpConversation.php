@@ -4,68 +4,77 @@ namespace App\Filament\Pages;
 
 use App\Models\McpConnection;
 use App\Services\McpClient;
-use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Log;
 
-class McpConversation extends Page
+class McpConversation extends Page implements HasForms
 {
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
-    protected string $view = 'filament.pages.mcp-conversation';
+    use InteractsWithForms;
+
     protected static ?string $title = 'MCP Conversation';
+
     protected static ?string $navigationLabel = 'Chat with Claude';
-    
-    public ?int $selectedConnection = null;
-    public string $message = '';
+
+    public ?array $data = [];
+
     public array $conversation = [];
+
     public array $availableTools = [];
-    public ?string $selectedTool = null;
-    public array $toolArguments = [];
-    
+
     public function mount(): void
     {
         $this->conversation = [];
         $this->loadAvailableConnections();
     }
-    
-    protected function getForms(): array
+
+    public function conversationForm(Form $form): Form
+    {
+        return $form
+            ->schema($this->getFormSchema())
+            ->statePath('data')
+            ->columns(2);
+    }
+
+    protected function getFormSchema(): array
     {
         return [
-            'conversationForm' => $this->form(Form::make()->schema([
-                Select::make('selectedConnection')
-                    ->label('MCP Connection')
-                    ->options(McpConnection::active()->pluck('name', 'id'))
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(fn () => $this->loadTools()),
-                    
-                Textarea::make('message')
-                    ->label('Message')
-                    ->rows(3)
-                    ->placeholder('Type your message to Claude Code...')
-                    ->required(),
-                    
-                Select::make('selectedTool')
-                    ->label('Use Tool (Optional)')
-                    ->options(fn () => collect($this->availableTools)->pluck('description', 'name'))
-                    ->nullable()
-                    ->live(),
-                    
-                KeyValue::make('toolArguments')
-                    ->label('Tool Arguments')
-                    ->visible(fn () => !empty($this->selectedTool))
-                    ->keyLabel('Parameter')
-                    ->valueLabel('Value'),
-            ])),
+            Select::make('selectedConnection')
+                ->label('MCP Connection')
+                ->options(McpConnection::where('status', 'active')->pluck('name', 'id'))
+                ->required()
+                ->live()
+                ->afterStateUpdated(fn () => $this->loadTools()),
+
+            Select::make('selectedTool')
+                ->label('Use Tool (Optional)')
+                ->options(fn () => collect($this->availableTools)->pluck('description', 'name'))
+                ->nullable()
+                ->live(),
+
+            Textarea::make('message')
+                ->label('Message')
+                ->rows(3)
+                ->placeholder('Type your message to Claude Code...')
+                ->required()
+                ->columnSpanFull(),
+
+            KeyValue::make('toolArguments')
+                ->label('Tool Arguments')
+                ->visible(fn (callable $get) => ! empty($get('selectedTool')))
+                ->keyLabel('Parameter')
+                ->valueLabel('Value')
+                ->columnSpanFull(),
         ];
     }
-    
+
     protected function getHeaderActions(): array
     {
         return [
@@ -73,67 +82,70 @@ class McpConversation extends Page
                 ->label('Send Message')
                 ->icon('heroicon-o-paper-airplane')
                 ->action('sendMessage')
-                ->disabled(fn () => empty($this->selectedConnection)),
-                
+                ->disabled(fn () => empty($this->data['selectedConnection'] ?? null)),
+
             Action::make('callTool')
                 ->label('Call Tool')
                 ->icon('heroicon-o-wrench')
                 ->action('callTool')
-                ->disabled(fn () => empty($this->selectedConnection) || empty($this->selectedTool))
-                ->visible(fn () => !empty($this->selectedTool)),
-                
+                ->disabled(fn () => empty($this->data['selectedConnection'] ?? null) || empty($this->data['selectedTool'] ?? null))
+                ->visible(fn () => ! empty($this->data['selectedTool'] ?? null)),
+
             Action::make('clearConversation')
                 ->label('Clear')
                 ->icon('heroicon-o-trash')
                 ->action('clearConversation')
                 ->color('danger')
                 ->requiresConfirmation(),
-                
+
             Action::make('refreshTools')
                 ->label('Refresh Tools')
                 ->icon('heroicon-o-arrow-path')
                 ->action('loadTools'),
         ];
     }
-    
+
     public function sendMessage(): void
     {
-        if (empty($this->message) || empty($this->selectedConnection)) {
+        $formData = $this->form->getState();
+
+        if (empty($formData['message']) || empty($formData['selectedConnection'])) {
             return;
         }
-        
+
         try {
-            $connection = McpConnection::find($this->selectedConnection);
-            
-            if (!$connection) {
+            $connection = McpConnection::find($formData['selectedConnection']);
+
+            if (! $connection) {
                 Notification::make()
                     ->title('Connection not found')
                     ->danger()
                     ->send();
+
                 return;
             }
-            
+
             $client = new McpClient($connection);
-            
+
             // Add user message to conversation
             $this->conversation[] = [
                 'role' => 'user',
-                'content' => $this->message,
+                'content' => $formData['message'],
                 'timestamp' => now()->toISOString(),
             ];
-            
+
             // Send conversation to Claude Code
             $response = $client->executeConversation([
                 [
                     'role' => 'user',
-                    'content' => $this->message
-                ]
+                    'content' => $formData['message'],
+                ],
             ]);
-            
+
             if (isset($response['error'])) {
                 $this->conversation[] = [
                     'role' => 'error',
-                    'content' => 'Error: ' . $response['error'],
+                    'content' => 'Error: '.$response['error'],
                     'timestamp' => now()->toISOString(),
                 ];
             } else {
@@ -143,23 +155,23 @@ class McpConversation extends Page
                     'timestamp' => now()->toISOString(),
                 ];
             }
-            
-            $this->message = '';
-            
+
+            $this->form->fill(['message' => '']);
+
             Notification::make()
                 ->title('Message sent successfully')
                 ->success()
                 ->send();
-                
+
         } catch (\Exception $e) {
             Log::error('Conversation error', ['error' => $e->getMessage()]);
-            
+
             $this->conversation[] = [
                 'role' => 'error',
-                'content' => 'Error: ' . $e->getMessage(),
+                'content' => 'Error: '.$e->getMessage(),
                 'timestamp' => now()->toISOString(),
             ];
-            
+
             Notification::make()
                 ->title('Error sending message')
                 ->body($e->getMessage())
@@ -167,41 +179,44 @@ class McpConversation extends Page
                 ->send();
         }
     }
-    
+
     public function callTool(): void
     {
-        if (empty($this->selectedTool) || empty($this->selectedConnection)) {
+        $formData = $this->form->getState();
+
+        if (empty($formData['selectedTool']) || empty($formData['selectedConnection'])) {
             return;
         }
-        
+
         try {
-            $connection = McpConnection::find($this->selectedConnection);
-            
-            if (!$connection) {
+            $connection = McpConnection::find($formData['selectedConnection']);
+
+            if (! $connection) {
                 Notification::make()
                     ->title('Connection not found')
                     ->danger()
                     ->send();
+
                 return;
             }
-            
+
             $client = new McpClient($connection);
-            
+
             // Add tool call to conversation
             $this->conversation[] = [
                 'role' => 'tool_call',
-                'content' => "Calling tool: {$this->selectedTool}",
-                'tool' => $this->selectedTool,
-                'arguments' => $this->toolArguments,
+                'content' => "Calling tool: {$formData['selectedTool']}",
+                'tool' => $formData['selectedTool'],
+                'arguments' => $formData['toolArguments'] ?? [],
                 'timestamp' => now()->toISOString(),
             ];
-            
-            $response = $client->callTool($this->selectedTool, $this->toolArguments);
-            
+
+            $response = $client->callTool($formData['selectedTool'], $formData['toolArguments'] ?? []);
+
             if (isset($response['error'])) {
                 $this->conversation[] = [
                     'role' => 'error',
-                    'content' => 'Tool Error: ' . $response['error'],
+                    'content' => 'Tool Error: '.$response['error'],
                     'timestamp' => now()->toISOString(),
                 ];
             } else {
@@ -211,24 +226,23 @@ class McpConversation extends Page
                     'timestamp' => now()->toISOString(),
                 ];
             }
-            
-            $this->selectedTool = null;
-            $this->toolArguments = [];
-            
+
+            $this->form->fill(['selectedTool' => null, 'toolArguments' => []]);
+
             Notification::make()
                 ->title('Tool executed successfully')
                 ->success()
                 ->send();
-                
+
         } catch (\Exception $e) {
             Log::error('Tool call error', ['error' => $e->getMessage()]);
-            
+
             $this->conversation[] = [
                 'role' => 'error',
-                'content' => 'Tool Error: ' . $e->getMessage(),
+                'content' => 'Tool Error: '.$e->getMessage(),
                 'timestamp' => now()->toISOString(),
             ];
-            
+
             Notification::make()
                 ->title('Error calling tool')
                 ->body($e->getMessage())
@@ -236,40 +250,43 @@ class McpConversation extends Page
                 ->send();
         }
     }
-    
+
     public function clearConversation(): void
     {
         $this->conversation = [];
-        
+
         Notification::make()
             ->title('Conversation cleared')
             ->success()
             ->send();
     }
-    
+
     public function loadTools(): void
     {
-        if (empty($this->selectedConnection)) {
+        $formData = $this->form->getState();
+
+        if (empty($formData['selectedConnection'])) {
             $this->availableTools = [];
+
             return;
         }
-        
+
         try {
-            $connection = McpConnection::find($this->selectedConnection);
-            
-            if (!$connection) {
+            $connection = McpConnection::find($formData['selectedConnection']);
+
+            if (! $connection) {
                 return;
             }
-            
+
             $client = new McpClient($connection);
             $this->availableTools = $client->listTools();
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to load tools', ['error' => $e->getMessage()]);
             $this->availableTools = [];
         }
     }
-    
+
     private function loadAvailableConnections(): void
     {
         // This method could be expanded to test connections and show their status

@@ -24,6 +24,7 @@ Laravel Loop Filament is a Laravel 12 application that implements a **bidirectio
 - [06_deployment_guide.md](06_deployment_guide.md) - Production deployment instructions
 - [07_troubleshooting.md](07_troubleshooting.md) - Common issues and solutions
 - [08_testing_guide.md](08_testing_guide.md) - Testing MCP integration and endpoints
+- [09_filament_v4_migration.md](09_filament_v4_migration.md) - Filament v3 vs v4 migration insights
 
 ## Current Progress
 
