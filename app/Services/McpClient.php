@@ -208,30 +208,34 @@ class McpClient
 
     private function sendStdioRequest(array $request): array
     {
-        // For stdio, we'd need to launch a process and communicate via stdin/stdout
-        // This is complex and would require careful process management
+        // For stdio, we need to launch a process and communicate via stdin/stdout
+        $command = $this->connection->endpoint_url;
 
-        $command = $this->connection->endpoint_url; // This would be the command to run
+        // Prepare JSON-RPC request
+        $jsonRequest = json_encode($request);
 
-        $process = Process::start($command);
+        // Run the process with input
+        $result = Process::input($jsonRequest)
+            ->run($command);
 
-        // Send request via stdin
-        $process->input(json_encode($request)."\n");
-
-        // Read response from stdout
-        $output = $process->output();
-
-        if (! $process->successful()) {
-            throw new \Exception('Process failed: '.$process->errorOutput());
+        if (! $result->successful()) {
+            throw new \Exception('Process failed: '.$result->errorOutput());
         }
 
-        $lines = explode("\n", trim($output));
-        $lastLine = end($lines);
+        $output = trim($result->output());
+
+        if (empty($output)) {
+            throw new \Exception('No output received from MCP server');
+        }
+
+        // Parse the last line as JSON-RPC response
+        $lines = explode("\n", $output);
+        $lastLine = trim(end($lines));
 
         $response = json_decode($lastLine, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception('Invalid JSON response: '.$lastLine);
+            throw new \Exception('Invalid JSON response: '.$lastLine.' (Full output: '.$output.')');
         }
 
         return $response;
