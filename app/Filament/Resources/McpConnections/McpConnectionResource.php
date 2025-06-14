@@ -33,6 +33,7 @@ class McpConnectionResource extends Resource
                 TextInput::make('endpoint_url')
                     ->label('Endpoint URL')
                     ->helperText('For HTTP/WebSocket: enter URL (e.g. http://localhost:3000). For stdio: enter command path (e.g. /usr/bin/claude mcp serve)')
+                    ->default('/usr/bin/claude mcp serve')
                     ->required(),
 
                 Select::make('transport_type')
