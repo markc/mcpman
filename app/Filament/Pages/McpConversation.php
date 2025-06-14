@@ -113,9 +113,18 @@ class McpConversation extends Page implements HasForms
 
     public function sendMessage(): void
     {
-        $formData = $this->form->getState();
+        // Validate form first
+        $this->form->getState();
+
+        // Use the data property which is where form data is stored
+        $formData = $this->data;
 
         if (empty($formData['message']) || empty($formData['selectedConnection'])) {
+            Notification::make()
+                ->title('Please fill in all required fields')
+                ->warning()
+                ->send();
+
             return;
         }
 
@@ -162,7 +171,7 @@ class McpConversation extends Page implements HasForms
                 ];
             }
 
-            $this->form->fill(['message' => '']);
+            $this->data['message'] = '';
 
             Notification::make()
                 ->title('Message sent successfully')
@@ -188,7 +197,8 @@ class McpConversation extends Page implements HasForms
 
     public function callTool(): void
     {
-        $formData = $this->form->getState();
+        $this->form->getState();
+        $formData = $this->data;
 
         if (empty($formData['selectedTool']) || empty($formData['selectedConnection'])) {
             return;
@@ -233,7 +243,8 @@ class McpConversation extends Page implements HasForms
                 ];
             }
 
-            $this->form->fill(['selectedTool' => null, 'toolArguments' => []]);
+            $this->data['selectedTool'] = null;
+            $this->data['toolArguments'] = [];
 
             Notification::make()
                 ->title('Tool executed successfully')
