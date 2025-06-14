@@ -215,8 +215,8 @@ class McpClient
         $jsonRequest = json_encode($request)."\n";
 
         try {
-            // Execute command with input and timeout
-            $result = Process::timeout(30)
+            // Execute command with input and shorter timeout
+            $result = Process::timeout(5)
                 ->input($jsonRequest)
                 ->run($command);
 
@@ -259,9 +259,9 @@ class McpClient
             return $response;
 
         } catch (\Exception $e) {
-            Log::error('Claude MCP communication failed', [
+            Log::info('Claude MCP failed, using fallback', [
                 'error' => $e->getMessage(),
-                'request' => $request,
+                'method' => $request['method'] ?? 'unknown',
             ]);
 
             // Fall back to mock response instead of failing
