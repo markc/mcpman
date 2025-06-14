@@ -14,6 +14,7 @@ use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -32,8 +33,18 @@ class McpConnectionResource extends Resource
 
                 TextInput::make('endpoint_url')
                     ->label('Endpoint URL')
-                    ->url()
-                    ->required(),
+                    ->helperText('For HTTP/WebSocket: enter URL (e.g. http://localhost:3000). For stdio: enter command path (e.g. /usr/bin/claude mcp serve)')
+                    ->required()
+                    ->rules([
+                        function (Get $get) {
+                            return function ($attribute, $value, $fail) use ($get) {
+                                $transport = $get('transport_type') ?? 'stdio';
+                                if (in_array($transport, ['http', 'websocket']) && ! filter_var($value, FILTER_VALIDATE_URL)) {
+                                    $fail('Please enter a valid URL for HTTP/WebSocket transport.');
+                                }
+                            };
+                        },
+                    ]),
 
                 Select::make('transport_type')
                     ->label('Transport Type')
@@ -43,7 +54,8 @@ class McpConnectionResource extends Resource
                         'websocket' => 'WebSocket',
                     ])
                     ->required()
-                    ->default('stdio'),
+                    ->default('stdio')
+                    ->live(),
 
                 Select::make('status')
                     ->options([
