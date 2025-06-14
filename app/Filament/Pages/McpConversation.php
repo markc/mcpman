@@ -113,6 +113,8 @@ class McpConversation extends Page implements HasForms
 
     public function sendMessage(): void
     {
+        Log::info('sendMessage method called', ['data' => $this->data]);
+
         // Validate form first
         $this->form->getState();
 
