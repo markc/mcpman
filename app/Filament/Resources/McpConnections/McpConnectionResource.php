@@ -15,7 +15,6 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -34,17 +33,7 @@ class McpConnectionResource extends Resource
                 TextInput::make('endpoint_url')
                     ->label('Endpoint URL')
                     ->helperText('For HTTP/WebSocket: enter URL (e.g. http://localhost:3000). For stdio: enter command path (e.g. /usr/bin/claude mcp serve)')
-                    ->required()
-                    ->rules([
-                        function (Get $get) {
-                            return function ($attribute, $value, $fail) use ($get) {
-                                $transport = $get('transport_type') ?? 'stdio';
-                                if (in_array($transport, ['http', 'websocket']) && ! filter_var($value, FILTER_VALIDATE_URL)) {
-                                    $fail('Please enter a valid URL for HTTP/WebSocket transport.');
-                                }
-                            };
-                        },
-                    ]),
+                    ->required(),
 
                 Select::make('transport_type')
                     ->label('Transport Type')
