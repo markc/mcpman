@@ -25,7 +25,7 @@ return new class extends Migration
             $table->timestamp('assigned_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
-            
+
             $table->index(['project_id', 'status']);
             $table->index(['assigned_to_user_id', 'status']);
             $table->index('priority');

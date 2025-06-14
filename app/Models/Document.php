@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 
 class Document extends Model
 {
@@ -26,6 +27,17 @@ class Document extends Model
         'tags' => 'array',
         'metadata' => 'array',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($document) {
+            if (empty($document->slug)) {
+                $document->slug = Str::slug($document->title);
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {

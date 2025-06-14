@@ -26,7 +26,7 @@ return new class extends Migration
             $table->enum('visibility', ['public', 'private', 'unlisted'])->default('public');
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['status', 'visibility']);
             $table->index('owner_id');
         });

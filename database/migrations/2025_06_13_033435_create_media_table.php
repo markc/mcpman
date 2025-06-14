@@ -23,7 +23,7 @@ return new class extends Migration
             $table->morphs('mediable');
             $table->foreignId('uploaded_by_user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
-            
+
             $table->index('uploaded_by_user_id');
         });
     }

@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 
 class Dataset extends Model
 {
@@ -26,6 +27,17 @@ class Dataset extends Model
         'schema' => 'array',
         'metadata' => 'array',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($dataset) {
+            if (empty($dataset->slug)) {
+                $dataset->slug = Str::slug($dataset->name);
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {
