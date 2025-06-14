@@ -11,7 +11,7 @@
             </div>
             
             <div class="fi-section-content px-6 py-4">
-                <div class="max-h-96 overflow-y-auto space-y-4">
+                <div id="conversation-container" class="max-h-96 overflow-y-auto space-y-4">
                     @if(empty($this->conversation))
                         <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                             <x-filament::icon
@@ -115,4 +115,38 @@
             </div>
         @endif
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Listen for conversation updates
+            window.addEventListener('conversation-updated', function() {
+                const container = document.getElementById('conversation-container');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            });
+
+            // Auto-scroll on page load
+            const container = document.getElementById('conversation-container');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // Listen for real-time conversation updates via Echo
+            if (window.Echo) {
+                const userId = {{ auth()->id() ?? 1 }};
+                window.Echo.private(`mcp-conversations.${userId}`)
+                    .listen('.conversation.message', (e) => {
+                        console.log('Real-time message received:', e);
+                        // Livewire will handle the UI update via the #[On] listener
+                        setTimeout(() => {
+                            const container = document.getElementById('conversation-container');
+                            if (container) {
+                                container.scrollTop = container.scrollHeight;
+                            }
+                        }, 100);
+                    });
+            }
+        });
+    </script>
 </x-filament-panels::page>

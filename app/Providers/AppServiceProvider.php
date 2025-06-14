@@ -11,7 +11,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register PersistentMcpManager as singleton
+        $this->app->singleton(\App\Services\PersistentMcpManager::class, function ($app) {
+            return new \App\Services\PersistentMcpManager;
+        });
     }
 
     /**

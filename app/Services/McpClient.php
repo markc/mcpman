@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\McpConversationMessage;
 use App\Models\McpConnection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,12 +12,28 @@ class McpClient
 {
     private McpConnection $connection;
 
-    public function __construct(McpConnection $connection)
+    private PersistentMcpManager $manager;
+
+    private bool $usePersistentConnection;
+
+    public function __construct(McpConnection $connection, ?PersistentMcpManager $manager = null)
     {
         $this->connection = $connection;
+        $this->manager = $manager ?? app(PersistentMcpManager::class);
+        $this->usePersistentConnection = config('mcp.client.use_persistent', true);
     }
 
     public function connect(): bool
+    {
+        if ($this->usePersistentConnection) {
+            return $this->manager->startConnection($this->connection);
+        }
+
+        // Fallback to legacy connection method
+        return $this->legacyConnect();
+    }
+
+    private function legacyConnect(): bool
     {
         try {
             $response = $this->sendRequest('initialize', [
@@ -58,6 +75,10 @@ class McpClient
     public function listTools(): array
     {
         try {
+            if ($this->usePersistentConnection && $this->manager->isConnectionActive((string) $this->connection->id)) {
+                return $this->manager->listTools((string) $this->connection->id);
+            }
+
             $response = $this->sendRequest('tools/list');
 
             return $response['result']['tools'] ?? [];
@@ -71,6 +92,12 @@ class McpClient
     public function callTool(string $name, array $arguments = []): array
     {
         try {
+            if ($this->usePersistentConnection && $this->manager->isConnectionActive((string) $this->connection->id)) {
+                $response = $this->manager->callTool((string) $this->connection->id, $name, $arguments);
+
+                return $response['result'] ?? $response;
+            }
+
             $response = $this->sendRequest('tools/call', [
                 'name' => $name,
                 'arguments' => $arguments,
@@ -142,13 +169,33 @@ class McpClient
     public function executeConversation(array $messages): array
     {
         try {
-            // This would be a custom method for having Claude Code process a conversation
-            $response = $this->sendRequest('conversation/execute', [
-                'messages' => $messages,
-                'model' => 'claude-3-5-sonnet-20241022',
+            if ($this->usePersistentConnection && $this->manager->isConnectionActive((string) $this->connection->id)) {
+                $response = $this->manager->executeConversation((string) $this->connection->id, $messages);
+
+                // Broadcast the conversation message
+                if (isset($response['result'])) {
+                    $message = [
+                        'role' => 'assistant',
+                        'content' => $response['result']['content'][0]['text'] ?? $response['result']['content'] ?? 'No content',
+                        'timestamp' => now()->toISOString(),
+                    ];
+
+                    McpConversationMessage::dispatch(
+                        auth()->user() ?? \App\Models\User::first(),
+                        $this->connection,
+                        $message
+                    );
+                }
+
+                return $response;
+            }
+
+            // Fallback to direct execution
+            return $this->executeDirectClaudeCommand([
+                'method' => 'conversation/execute',
+                'params' => ['messages' => $messages],
             ]);
 
-            return $response['result'] ?? [];
         } catch (\Exception $e) {
             Log::error('Conversation execution failed', ['error' => $e->getMessage()]);
 
@@ -208,20 +255,123 @@ class McpClient
 
     private function sendStdioRequest(array $request): array
     {
-        // For Claude Code MCP server, we need to use persistent stdio communication
-        $command = ['claude', 'mcp', 'serve'];
+        // Skip MCP server mode for now due to persistent connection requirements
+        // Go directly to direct Claude execution for conversation
+        if (($request['method'] ?? '') === 'conversation/execute') {
+            Log::info('Using direct Claude execution instead of MCP server');
 
-        // Prepare JSON-RPC request
-        $jsonRequest = json_encode($request)."\n";
+            return $this->executeDirectClaudeCommand($request);
+        }
 
+        // For other methods, fall back to mock responses
+        return $this->getMockResponse($request);
+    }
+
+    private function tryMcpServerMode(array $request): ?array
+    {
         try {
-            // Execute command with input and shorter timeout
-            $result = Process::timeout(5)
+            // Use the proper Claude MCP serve command with debug enabled
+            $command = ['claude', 'mcp', 'serve', '--debug'];
+            $jsonRequest = json_encode($request)."\n";
+
+            Log::info('Trying Claude MCP server mode', [
+                'method' => $request['method'] ?? 'unknown',
+                'request_id' => $request['id'] ?? 'unknown',
+            ]);
+
+            // Increase timeout since MCP server initialization may take time
+            $result = Process::timeout(15)
                 ->input($jsonRequest)
                 ->run($command);
 
             if (! $result->successful()) {
-                Log::error('Claude MCP process failed', [
+                Log::info('MCP server mode failed', [
+                    'exit_code' => $result->exitCode(),
+                    'error' => $result->errorOutput(),
+                    'output' => $result->output(),
+                ]);
+
+                return null;
+            }
+
+            $output = trim($result->output());
+            $errorOutput = trim($result->errorOutput());
+
+            // Log both outputs for debugging
+            if (! empty($errorOutput)) {
+                Log::debug('MCP server stderr', ['stderr' => $errorOutput]);
+            }
+
+            if (empty($output)) {
+                Log::debug('MCP server mode returned no stdout output');
+
+                return null;
+            }
+
+            Log::debug('MCP server raw output', ['output' => $output]);
+
+            // Parse JSON-RPC response - look for valid JSON-RPC in any line
+            $lines = array_filter(explode("\n", $output));
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (empty($line) || ! str_starts_with($line, '{')) {
+                    continue;
+                }
+
+                $response = json_decode($line, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    // Check if it's a valid JSON-RPC response
+                    if (isset($response['jsonrpc']) && $response['jsonrpc'] === '2.0') {
+                        Log::info('MCP server mode successful', [
+                            'response_id' => $response['id'] ?? 'unknown',
+                            'has_result' => isset($response['result']),
+                            'has_error' => isset($response['error']),
+                        ]);
+
+                        return $response;
+                    }
+                }
+            }
+
+            Log::debug('MCP server output contains no valid JSON-RPC responses', [
+                'line_count' => count($lines),
+                'first_line' => $lines[0] ?? 'empty',
+            ]);
+
+            return null;
+
+        } catch (\Exception $e) {
+            Log::info('MCP server mode exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return null;
+        }
+    }
+
+    private function executeDirectClaudeCommand(array $request): array
+    {
+        $params = $request['params'] ?? [];
+        $messages = $params['messages'] ?? [];
+        $lastMessage = end($messages);
+        $userPrompt = $lastMessage['content'] ?? '';
+
+        if (empty($userPrompt)) {
+            return $this->getMockResponse($request);
+        }
+
+        try {
+            // Use claude -p "prompt" for direct execution
+            $command = ['claude', '-p', $userPrompt];
+
+            Log::info('Executing direct Claude command', ['prompt' => $userPrompt]);
+
+            $result = Process::timeout(30)
+                ->run($command);
+
+            if (! $result->successful()) {
+                Log::warning('Direct Claude execution failed', [
                     'exit_code' => $result->exitCode(),
                     'error' => $result->errorOutput(),
                     'output' => $result->output(),
@@ -234,37 +384,27 @@ class McpClient
             $output = trim($result->output());
 
             if (empty($output)) {
-                // If no output, fall back to mock for now
-                Log::warning('No output from Claude MCP, using fallback');
+                Log::warning('No output from direct Claude execution');
 
                 return $this->getMockResponse($request);
             }
 
-            // Parse JSON-RPC response
-            $lines = array_filter(explode("\n", $output));
-            $lastLine = trim(end($lines));
+            Log::info('Direct Claude execution successful', ['response_length' => strlen($output)]);
 
-            $response = json_decode($lastLine, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                Log::error('Invalid JSON from Claude MCP', [
-                    'output' => $output,
-                    'last_line' => $lastLine,
-                ]);
-
-                // Fall back to mock response
-                return $this->getMockResponse($request);
-            }
-
-            return $response;
+            // Return the response in MCP format
+            return [
+                'result' => [
+                    'content' => $output,
+                ],
+            ];
 
         } catch (\Exception $e) {
-            Log::info('Claude MCP failed, using fallback', [
+            Log::info('Direct Claude execution failed, using fallback', [
                 'error' => $e->getMessage(),
-                'method' => $request['method'] ?? 'unknown',
+                'prompt' => $userPrompt,
             ]);
 
-            // Fall back to mock response instead of failing
+            // Fall back to mock response
             return $this->getMockResponse($request);
         }
     }
@@ -347,12 +487,39 @@ class McpClient
         $lastMessage = end($messages);
         $userMessage = $lastMessage['content'] ?? '';
 
-        // For now, return a simple response indicating this is a placeholder
+        // Generate a more realistic mock response based on the user's message
+        $response = $this->generateMockResponse($userMessage);
+
         return [
             'result' => [
-                'content' => "Hello! This is Claude Code MCP server responding to: '{$userMessage}'. Full MCP integration is in development.",
+                'content' => $response,
             ],
         ];
+    }
+
+    private function generateMockResponse(string $userMessage): string
+    {
+        $lowerMessage = strtolower($userMessage);
+
+        // Check for specific questions and provide relevant mock responses
+        if (str_contains($lowerMessage, 'what day') || str_contains($lowerMessage, 'today')) {
+            return 'Today is '.now()->format('l, F j, Y').'. (This is a mock response from the MCP fallback system - real Claude Code integration is being attempted but timing out)';
+        }
+
+        if (str_contains($lowerMessage, 'time')) {
+            return 'The current time is '.now()->format('g:i A T').'. (Mock response from MCP fallback)';
+        }
+
+        if (str_contains($lowerMessage, 'hello') || str_contains($lowerMessage, 'hi')) {
+            return "Hello! I'm Claude Code responding via the MCP integration. (This is currently a mock response as the real integration is timing out)";
+        }
+
+        if (str_contains($lowerMessage, 'weather')) {
+            return "I don't have access to current weather data in this mock response. For real weather information, the full Claude Code integration would need to be working.";
+        }
+
+        // Default response for any other message
+        return "I received your message: '{$userMessage}'. This is a mock response from the MCP fallback system. The real Claude Code MCP server is being attempted but timing out after 5 seconds. Your message was processed successfully though!";
     }
 
     public function disconnect(): void
@@ -368,6 +535,10 @@ class McpClient
     public function testConnection(): bool
     {
         try {
+            if ($this->usePersistentConnection) {
+                return $this->manager->healthCheck((string) $this->connection->id);
+            }
+
             $response = $this->sendRequest('ping');
 
             return isset($response['result']) || isset($response['id']);
@@ -376,5 +547,21 @@ class McpClient
 
             return false;
         }
+    }
+
+    public function disconnect(): void
+    {
+        if ($this->usePersistentConnection) {
+            $this->manager->stopConnection((string) $this->connection->id);
+        }
+    }
+
+    public function isConnected(): bool
+    {
+        if ($this->usePersistentConnection) {
+            return $this->manager->isConnectionActive((string) $this->connection->id);
+        }
+
+        return $this->connection->status === 'active';
     }
 }
