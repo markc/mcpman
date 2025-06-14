@@ -18,7 +18,11 @@ class McpServer
             $method = $request['method'] ?? null;
             $params = $request['params'] ?? [];
 
-            Log::info('MCP Server received request', ['method' => $method, 'params' => $params]);
+            Log::info('MCP Server received request', [
+                'method' => $method,
+                'params_count' => count($params),
+                'has_params' => ! empty($params),
+            ]);
 
             return match ($method) {
                 'initialize' => $this->initialize($params),
@@ -31,7 +35,11 @@ class McpServer
                 default => $this->errorResponse('Unknown method', -32601)
             };
         } catch (\Exception $e) {
-            Log::error('MCP Server error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            Log::error('MCP Server error', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
 
             return $this->errorResponse($e->getMessage(), -32603);
         }

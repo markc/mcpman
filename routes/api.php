@@ -10,6 +10,13 @@ Route::get('/user', function (Request $request) {
 
 // MCP Server endpoints
 Route::post('/mcp', [McpController::class, 'handle'])->name('mcp.handle');
-Route::post('/mcp/tools', [McpController::class, 'handle'])->name('mcp.tools');
-Route::post('/mcp/resources', [McpController::class, 'handle'])->name('mcp.resources');
-Route::post('/mcp/prompts', [McpController::class, 'handle'])->name('mcp.prompts');
+
+// Health check endpoint
+Route::get('/mcp/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'service' => 'MCP Server',
+        'version' => '1.0.0',
+        'timestamp' => now()->toISOString(),
+    ]);
+})->name('mcp.health');
