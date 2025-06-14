@@ -215,8 +215,10 @@ class McpClient
         $jsonRequest = json_encode($request);
 
         // Run the process with input
+        // Split command into array if it contains spaces
+        $commandArray = explode(' ', $command);
         $result = Process::input($jsonRequest)
-            ->run($command);
+            ->run($commandArray);
 
         if (! $result->successful()) {
             throw new \Exception('Process failed: '.$result->errorOutput());
