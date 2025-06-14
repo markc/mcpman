@@ -263,18 +263,21 @@ class McpConversation extends Page implements HasForms
 
     public function loadTools(): void
     {
-        $formData = $this->form->getState();
+        // Use the data property instead of form state to avoid validation errors
+        $selectedConnection = $this->data['selectedConnection'] ?? null;
 
-        if (empty($formData['selectedConnection'])) {
+        if (empty($selectedConnection)) {
             $this->availableTools = [];
 
             return;
         }
 
         try {
-            $connection = McpConnection::find($formData['selectedConnection']);
+            $connection = McpConnection::find($selectedConnection);
 
             if (! $connection) {
+                $this->availableTools = [];
+
                 return;
             }
 
