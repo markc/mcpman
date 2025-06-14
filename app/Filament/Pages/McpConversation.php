@@ -23,6 +23,8 @@ class McpConversation extends Page implements HasForms
 
     protected static ?string $navigationLabel = 'Chat with Claude';
 
+    protected static string $view = 'filament.pages.mcp-conversation';
+
     public ?array $data = [];
 
     public array $conversation = [];
@@ -35,7 +37,7 @@ class McpConversation extends Page implements HasForms
         $this->loadAvailableConnections();
     }
 
-    public function conversationForm(Form $form): Form
+    public function form(Form $form): Form
     {
         return $form
             ->schema($this->getFormSchema())
