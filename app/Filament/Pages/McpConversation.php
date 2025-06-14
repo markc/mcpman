@@ -10,9 +10,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Log;
 
 class McpConversation extends Page implements HasForms
@@ -23,7 +23,10 @@ class McpConversation extends Page implements HasForms
 
     protected static ?string $navigationLabel = 'Chat with Claude';
 
-    protected static string $view = 'filament.pages.mcp-conversation';
+    public function getView(): string
+    {
+        return 'filament.pages.mcp-conversation';
+    }
 
     public ?array $data = [];
 
@@ -31,21 +34,7 @@ class McpConversation extends Page implements HasForms
 
     public array $availableTools = [];
 
-    public function mount(): void
-    {
-        $this->conversation = [];
-        $this->loadAvailableConnections();
-    }
-
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema($this->getFormSchema())
-            ->statePath('data')
-            ->columns(2);
-    }
-
-    protected function getFormSchema(): array
+    public function getFormSchema(): array
     {
         return [
             Select::make('selectedConnection')
@@ -75,6 +64,21 @@ class McpConversation extends Page implements HasForms
                 ->valueLabel('Value')
                 ->columnSpanFull(),
         ];
+    }
+
+    public function mount(): void
+    {
+        $this->conversation = [];
+        $this->form->fill();
+        $this->loadAvailableConnections();
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components($this->getFormSchema())
+            ->statePath('data')
+            ->columns(2);
     }
 
     protected function getHeaderActions(): array

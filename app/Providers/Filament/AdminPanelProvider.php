@@ -53,6 +53,7 @@ class AdminPanelProvider extends PanelProvider
                 AutoLoginForLocal::class,
             ])
             ->authMiddleware([
+                AutoLoginForLocal::class,
                 Authenticate::class,
             ]);
     }
