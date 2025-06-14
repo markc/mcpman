@@ -21,6 +21,11 @@ class McpDashboard extends Page
 
     protected static string $routePath = '/';
 
+    public function getView(): string
+    {
+        return 'filament.pages.mcp-dashboard';
+    }
+
     public function getWidgets(): array
     {
         return [
