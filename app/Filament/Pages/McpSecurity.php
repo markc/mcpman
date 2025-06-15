@@ -5,8 +5,6 @@ namespace App\Filament\Pages;
 use App\Models\McpConnection;
 use App\Models\User;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Group;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -14,6 +12,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -60,21 +59,19 @@ class McpSecurity extends Page implements HasForms, HasTable
                         ->default(true)
                         ->helperText('Require explicit MCP permission to use MCP features'),
 
-                    Group::make([
-                        TextInput::make('session_timeout')
-                            ->label('Session Timeout (minutes)')
-                            ->numeric()
-                            ->default(120)
-                            ->required()
-                            ->helperText('Auto-logout inactive users'),
+                    TextInput::make('session_timeout')
+                        ->label('Session Timeout (minutes)')
+                        ->numeric()
+                        ->default(120)
+                        ->required()
+                        ->helperText('Auto-logout inactive users'),
 
-                        TextInput::make('max_failed_attempts')
-                            ->label('Max Failed Login Attempts')
-                            ->numeric()
-                            ->default(5)
-                            ->required()
-                            ->helperText('Lock account after failed attempts'),
-                    ])->columns(2),
+                    TextInput::make('max_failed_attempts')
+                        ->label('Max Failed Login Attempts')
+                        ->numeric()
+                        ->default(5)
+                        ->required()
+                        ->helperText('Lock account after failed attempts'),
                 ]),
 
             Section::make('Connection Security')
@@ -90,41 +87,37 @@ class McpSecurity extends Page implements HasForms, HasTable
                         ->default(true)
                         ->helperText('Validate SSL certificates for secure connections'),
 
-                    Group::make([
-                        TextInput::make('connection_timeout')
-                            ->label('Connection Timeout (seconds)')
-                            ->numeric()
-                            ->default(30)
-                            ->required()
-                            ->helperText('Maximum time to establish connections'),
+                    TextInput::make('connection_timeout')
+                        ->label('Connection Timeout (seconds)')
+                        ->numeric()
+                        ->default(30)
+                        ->required()
+                        ->helperText('Maximum time to establish connections'),
 
-                        TextInput::make('idle_timeout')
-                            ->label('Idle Connection Timeout (minutes)')
-                            ->numeric()
-                            ->default(15)
-                            ->required()
-                            ->helperText('Close idle connections after this time'),
-                    ])->columns(2),
+                    TextInput::make('idle_timeout')
+                        ->label('Idle Connection Timeout (minutes)')
+                        ->numeric()
+                        ->default(15)
+                        ->required()
+                        ->helperText('Close idle connections after this time'),
                 ]),
 
             Section::make('Rate Limiting')
                 ->description('Configure rate limiting and abuse prevention')
                 ->schema([
-                    Group::make([
-                        TextInput::make('requests_per_minute')
-                            ->label('Requests per Minute')
-                            ->numeric()
-                            ->default(60)
-                            ->required()
-                            ->helperText('Maximum requests per user per minute'),
+                    TextInput::make('requests_per_minute')
+                        ->label('Requests per Minute')
+                        ->numeric()
+                        ->default(60)
+                        ->required()
+                        ->helperText('Maximum requests per user per minute'),
 
-                        TextInput::make('connections_per_user')
-                            ->label('Max Connections per User')
-                            ->numeric()
-                            ->default(5)
-                            ->required()
-                            ->helperText('Maximum concurrent connections per user'),
-                    ])->columns(2),
+                    TextInput::make('connections_per_user')
+                        ->label('Max Connections per User')
+                        ->numeric()
+                        ->default(5)
+                        ->required()
+                        ->helperText('Maximum concurrent connections per user'),
 
                     Toggle::make('block_suspicious_activity')
                         ->label('Block Suspicious Activity')
@@ -145,25 +138,23 @@ class McpSecurity extends Page implements HasForms, HasTable
                         ->default(true)
                         ->helperText('Log failed authentication and connection attempts'),
 
-                    Group::make([
-                        Select::make('log_level')
-                            ->label('Log Level')
-                            ->options([
-                                'debug' => 'Debug',
-                                'info' => 'Info',
-                                'warning' => 'Warning',
-                                'error' => 'Error',
-                            ])
-                            ->default('info')
-                            ->required(),
+                    Select::make('log_level')
+                        ->label('Log Level')
+                        ->options([
+                            'debug' => 'Debug',
+                            'info' => 'Info',
+                            'warning' => 'Warning',
+                            'error' => 'Error',
+                        ])
+                        ->default('info')
+                        ->required(),
 
-                        TextInput::make('log_retention_days')
-                            ->label('Log Retention (days)')
-                            ->numeric()
-                            ->default(30)
-                            ->required()
-                            ->helperText('How long to keep security logs'),
-                    ])->columns(2),
+                    TextInput::make('log_retention_days')
+                        ->label('Log Retention (days)')
+                        ->numeric()
+                        ->default(30)
+                        ->required()
+                        ->helperText('How long to keep security logs'),
                 ]),
         ];
     }

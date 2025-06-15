@@ -16,9 +16,13 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class DatasetResource extends Resource
@@ -29,49 +33,80 @@ class DatasetResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->required()
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state))),
+                Section::make('Dataset Information')
+                    ->description('Basic dataset details and identification')
+                    ->schema([
+                        TextInput::make('name')
+                            ->label('Dataset Name')
+                            ->required()
+                            ->maxLength(255)
+                            ->helperText('The dataset name will auto-generate the slug')
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state))),
 
-                TextInput::make('slug')
-                    ->required()
-                    ->unique(ignoreRecord: true),
+                        TextInput::make('slug')
+                            ->label('URL Slug')
+                            ->required()
+                            ->maxLength(255)
+                            ->helperText('URL-friendly identifier for the dataset')
+                            ->unique(ignoreRecord: true),
 
-                Textarea::make('description')
-                    ->rows(3)
+                        Textarea::make('description')
+                            ->label('Description')
+                            ->helperText('Detailed description of the dataset purpose and contents')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
                     ->columnSpanFull(),
 
-                Select::make('type')
-                    ->options([
-                        'json' => 'JSON',
-                        'csv' => 'CSV',
-                        'xml' => 'XML',
-                        'yaml' => 'YAML',
-                        'text' => 'Text',
-                    ])
-                    ->required()
-                    ->default('json'),
+                Section::make('Dataset Configuration')
+                    ->description('Data format and processing settings')
+                    ->schema([
+                        Select::make('type')
+                            ->label('Data Format')
+                            ->helperText('Select the primary data format for this dataset')
+                            ->options([
+                                'json' => 'JSON - Structured data',
+                                'csv' => 'CSV - Tabular data',
+                                'xml' => 'XML - Markup data',
+                                'yaml' => 'YAML - Configuration data',
+                                'text' => 'Text - Plain text data',
+                            ])
+                            ->required()
+                            ->default('json'),
 
-                Select::make('status')
-                    ->options([
-                        'active' => 'Active',
-                        'archived' => 'Archived',
-                        'processing' => 'Processing',
+                        Select::make('status')
+                            ->label('Processing Status')
+                            ->helperText('Current state of the dataset')
+                            ->options([
+                                'active' => 'Active - Ready for use',
+                                'processing' => 'Processing - Being updated',
+                                'archived' => 'Archived - Read-only',
+                            ])
+                            ->required()
+                            ->default('active'),
                     ])
-                    ->required()
-                    ->default('active'),
-
-                KeyValue::make('schema')
-                    ->label('Schema Definition')
-                    ->keyLabel('Field')
-                    ->valueLabel('Type')
+                    ->columns(2)
                     ->columnSpanFull(),
 
-                KeyValue::make('metadata')
-                    ->label('Metadata')
-                    ->keyLabel('Key')
-                    ->valueLabel('Value')
+                Section::make('Schema & Metadata')
+                    ->description('Data structure definition and additional properties')
+                    ->schema([
+                        KeyValue::make('schema')
+                            ->label('Schema Definition')
+                            ->helperText('Define the structure and data types for your dataset')
+                            ->keyLabel('Field Name')
+                            ->valueLabel('Data Type')
+                            ->columnSpanFull(),
+
+                        KeyValue::make('metadata')
+                            ->label('Custom Metadata')
+                            ->helperText('Additional properties and configuration options')
+                            ->keyLabel('Property')
+                            ->valueLabel('Value')
+                            ->columnSpanFull(),
+                    ])
                     ->columnSpanFull(),
 
                 Hidden::make('user_id')
@@ -122,7 +157,31 @@ class DatasetResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
-                //
+                SelectFilter::make('type')
+                    ->options([
+                        'json' => 'JSON - Structured data',
+                        'csv' => 'CSV - Tabular data',
+                        'xml' => 'XML - Markup data',
+                        'yaml' => 'YAML - Configuration data',
+                        'text' => 'Text - Plain text data',
+                    ]),
+
+                SelectFilter::make('status')
+                    ->options([
+                        'active' => 'Active',
+                        'processing' => 'Processing',
+                        'archived' => 'Archived',
+                    ]),
+
+                Filter::make('has_schema')
+                    ->label('Has Schema Definition')
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('schema')->whereJsonLength('schema', '>', 0))
+                    ->toggle(),
+
+                Filter::make('recent')
+                    ->label('Created Recently')
+                    ->query(fn (Builder $query): Builder => $query->where('created_at', '>=', now()->subWeek()))
+                    ->toggle(),
             ])
             ->recordActions([
                 EditAction::make(),

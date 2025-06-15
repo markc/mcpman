@@ -15,10 +15,13 @@ use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class ApiKeyResource extends Resource
@@ -29,43 +32,69 @@ class ApiKeyResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->required(),
+                Section::make('API Key Information')
+                    ->description('Basic API key identification and authentication')
+                    ->schema([
+                        TextInput::make('name')
+                            ->label('Key Name')
+                            ->required()
+                            ->maxLength(255)
+                            ->helperText('Descriptive name for this API key'),
 
-                TextInput::make('key')
-                    ->label('API Key')
-                    ->default(fn () => 'mcp_'.Str::random(32))
-                    ->required()
-                    ->unique(ignoreRecord: true),
+                        TextInput::make('key')
+                            ->label('API Key Value')
+                            ->helperText('Unique key for API authentication (auto-generated)')
+                            ->default(fn () => 'mcp_'.Str::random(32))
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->columnSpanFull(),
 
-                KeyValue::make('permissions')
-                    ->label('Permissions')
-                    ->keyLabel('Resource')
-                    ->valueLabel('Actions')
-                    ->default([
-                        'datasets' => 'read,write',
-                        'documents' => 'read,write',
-                        'connections' => 'read',
+                Section::make('Access Control')
+                    ->description('Permissions and usage limitations')
+                    ->schema([
+                        KeyValue::make('permissions')
+                            ->label('Resource Permissions')
+                            ->helperText('Define what resources this key can access and what actions are allowed')
+                            ->keyLabel('Resource Type')
+                            ->valueLabel('Actions (comma-separated)')
+                            ->default([
+                                'datasets' => 'read,write',
+                                'documents' => 'read,write',
+                                'connections' => 'read',
+                            ])
+                            ->columnSpanFull(),
+
+                        KeyValue::make('rate_limits')
+                            ->label('Rate Limiting')
+                            ->helperText('Control API usage frequency to prevent abuse')
+                            ->keyLabel('Time Window')
+                            ->valueLabel('Request Limit')
+                            ->default([
+                                'requests_per_minute' => '60',
+                                'requests_per_hour' => '1000',
+                            ])
+                            ->columnSpanFull(),
                     ])
                     ->columnSpanFull(),
 
-                KeyValue::make('rate_limits')
-                    ->label('Rate Limits')
-                    ->keyLabel('Endpoint')
-                    ->valueLabel('Limit')
-                    ->default([
-                        'requests_per_minute' => '60',
-                        'requests_per_hour' => '1000',
+                Section::make('Key Settings')
+                    ->description('Activation status and expiration settings')
+                    ->schema([
+                        Toggle::make('is_active')
+                            ->label('Active')
+                            ->helperText('Enable or disable this API key')
+                            ->default(true),
+
+                        DateTimePicker::make('expires_at')
+                            ->label('Expiration Date')
+                            ->helperText('Optional: Set when this key should expire (leave empty for no expiration)')
+                            ->nullable(),
                     ])
+                    ->columns(2)
                     ->columnSpanFull(),
-
-                Toggle::make('is_active')
-                    ->label('Active')
-                    ->default(true),
-
-                DateTimePicker::make('expires_at')
-                    ->label('Expires At')
-                    ->nullable(),
 
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id()),
@@ -106,7 +135,26 @@ class ApiKeyResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
-                //
+                Filter::make('is_active')
+                    ->label('Active Keys Only')
+                    ->query(fn (Builder $query): Builder => $query->where('is_active', true))
+                    ->toggle()
+                    ->default(),
+
+                Filter::make('expires_soon')
+                    ->label('Expires Within 30 Days')
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('expires_at')->where('expires_at', '<=', now()->addDays(30)))
+                    ->toggle(),
+
+                Filter::make('never_expires')
+                    ->label('Never Expires')
+                    ->query(fn (Builder $query): Builder => $query->whereNull('expires_at'))
+                    ->toggle(),
+
+                Filter::make('recent')
+                    ->label('Created Recently')
+                    ->query(fn (Builder $query): Builder => $query->where('created_at', '>=', now()->subWeek()))
+                    ->toggle(),
             ])
             ->recordActions([
                 EditAction::make(),

@@ -4,7 +4,9 @@ namespace App\Filament\Pages;
 
 use App\Events\McpConversationMessage;
 use App\Models\McpConnection;
+use App\Models\Tool;
 use App\Services\McpClient;
+use App\Services\ToolRegistryManager;
 use Filament\Actions\Action;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -42,12 +44,12 @@ class McpConversation extends Page implements HasForms
                 ->label('MCP Connection')
                 ->options(McpConnection::where('status', 'active')->pluck('name', 'id'))
                 ->required()
-                ->live()
+                ->live(debounce: 500)
                 ->afterStateUpdated(fn () => $this->loadTools()),
 
             Select::make('selectedTool')
                 ->label('Use Tool (Optional)')
-                ->options(fn () => collect($this->availableTools)->pluck('description', 'name'))
+                ->options(fn () => $this->getToolOptions())
                 ->nullable()
                 ->live(),
 
@@ -265,7 +267,10 @@ class McpConversation extends Page implements HasForms
                 return;
             }
 
-            $client = new McpClient($connection);
+            // Find the tool in the registry
+            $tool = Tool::where('mcp_connection_id', $connection->id)
+                ->where('name', $formData['selectedTool'])
+                ->first();
 
             // Add tool call to conversation
             $this->conversation[] = [
@@ -276,7 +281,15 @@ class McpConversation extends Page implements HasForms
                 'timestamp' => now()->toISOString(),
             ];
 
-            $response = $client->callTool($formData['selectedTool'], $formData['toolArguments'] ?? []);
+            // Execute tool using the ToolRegistryManager for tracking
+            if ($tool) {
+                $toolRegistry = app(ToolRegistryManager::class);
+                $response = $toolRegistry->executeTool($tool, $formData['toolArguments'] ?? []);
+            } else {
+                // Fallback to direct client call if tool not in registry
+                $client = new McpClient($connection);
+                $response = $client->callTool($formData['selectedTool'], $formData['toolArguments'] ?? []);
+            }
 
             if (isset($response['error'])) {
                 $this->conversation[] = [
@@ -359,5 +372,26 @@ class McpConversation extends Page implements HasForms
     private function loadAvailableConnections(): void
     {
         // This method could be expanded to test connections and show their status
+    }
+
+    private function getToolOptions(): array
+    {
+        $selectedConnection = $this->data['selectedConnection'] ?? null;
+
+        if (! $selectedConnection) {
+            return [];
+        }
+
+        // First try to get tools from registry
+        $registryTools = Tool::where('mcp_connection_id', $selectedConnection)
+            ->where('is_active', true)
+            ->pluck('description', 'name')
+            ->toArray();
+
+        // Fallback to available tools from client
+        $clientTools = collect($this->availableTools)->pluck('description', 'name')->toArray();
+
+        // Merge both sources, registry takes precedence
+        return array_merge($clientTools, $registryTools);
     }
 }

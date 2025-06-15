@@ -137,68 +137,52 @@ This application provides a Model Context Protocol (MCP) server for data managem
 
 ## Filament v4 Form Patterns
 
-**⚠️ CRITICAL: Use these exact patterns for ALL Filament v4 forms to avoid namespace and component errors:**
+**⚠️ CRITICAL: ALL Filament v4 forms use the UNIVERSAL Schema pattern. See the definitive guide for complete details:**
 
-### Resource Forms (app/Filament/Resources/*/Resource.php)
+👉 **[Filament v4 Definitive Implementation Guide](plan/00_filament_v4_definitive_guide.md)**
+
+### UNIVERSAL Pattern (Resources AND Pages)
 ```php
-use Filament\Schemas\Schema;
-use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;                    // ALWAYS Schema
+use Filament\Forms\Components\TextInput;        // Form components
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\KeyValue;
-// DO NOT import Grid or Section for forms
+use Filament\Forms\Components\Placeholder;      // For section headers
+// NEVER import Section or Group from Schemas namespace
 
-public static function form(Schema $schema): Schema
+public function form(Schema $schema): Schema    // IDENTICAL for Resources AND Pages
 {
     return $schema
-        ->components([
+        ->components([                          // ALWAYS ->components()
+            Placeholder::make('section_header')
+                ->label('Section Title')
+                ->content('Section description')
+                ->columnSpanFull(),
+                
             TextInput::make('name')->required(),
             Select::make('status')->options([...])->required(),
             Textarea::make('description')->columnSpanFull(),
             KeyValue::make('metadata')->columnSpanFull(),
         ])
-        ->columns(2); // Creates 2-column grid layout
+        ->statePath('data')                     // ONLY for Pages, remove for Resources
+        ->columns(2);
 }
 ```
 
-### Page Forms (app/Filament/Pages/*.php)
-```php
-use Filament\Forms\Form;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\KeyValue;
-// DO NOT import Grid or Section for forms
-
-public function conversationForm(Form $form): Form
-{
-    return $form
-        ->schema($this->getFormSchema())
-        ->statePath('data')
-        ->columns(2); // Creates 2-column grid layout
-}
-
-protected function getFormSchema(): array
-{
-    return [
-        Select::make('connection')->required(),
-        Select::make('tool')->nullable(),
-        Textarea::make('message')->required()->columnSpanFull(),
-        KeyValue::make('arguments')->columnSpanFull(),
-    ];
-}
-```
-
-### Key Rules:
-1. **Resources**: Use `Schema $schema` and `->components([])`, NOT `Form $form` and `->schema([])`
-2. **Pages**: Use `Form $form` and `->schema([])`, NOT `Schema $schema` and `->components([])`
-3. **Grid Layout**: Use `->columns(2)` method, NOT `Grid::make(2)->schema([])`
-4. **Full Width**: Use `->columnSpanFull()` on components, NOT Grid wrappers
-5. **NO Grid/Section**: Never import `Filament\Schemas\Components\Grid` or `Filament\Schemas\Components\Section` for forms
-6. **Form Components**: Always use `Filament\Forms\Components\*` for form inputs
+### Key Rules (Battle-Tested):
+1. **UNIVERSAL**: ALL forms use `Schema $schema` and `->components([])` - NO exceptions
+2. **ONLY DIFFERENCE**: Pages add `->statePath('data')` and `InteractsWithForms` trait
+3. **NEVER USE**: `Section`/`Group` from Schemas namespace, `Form` class, `->schema()` method
+4. **VISUAL SECTIONS**: Use `Placeholder` components for headers, not Section wrappers
+5. **LAYOUT**: Use `->columns(2)` and `->columnSpanFull()`, never Grid wrappers
 
 ## Documentation
 
+### Filament v4 Implementation
+- **[🎯 Filament v4 Definitive Implementation Guide](plan/00_filament_v4_definitive_guide.md)** - **START HERE**: Complete, battle-tested guide for Filament v4 with universal patterns, common pitfalls, and proven solutions
+
+### MCP Integration & Usage
 For detailed information about the MCP integration and usage, see the comprehensive documentation in the `docs/` folder:
 
 - **[Installation & Setup](docs/01_installation_setup.md)** - Development environment setup

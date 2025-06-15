@@ -8,33 +8,123 @@ use App\Models\Document;
 use App\Models\McpConnection;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Cache;
 
 class McpStatsWidget extends BaseWidget
 {
     protected static ?int $sort = -1;
 
+    // Cache stats for 5 minutes to improve performance
+    protected int $cacheInterval = 300;
+
+    protected ?string $pollingInterval = '5m';
+
     protected function getStats(): array
     {
-        return [
-            Stat::make('Total Connections', McpConnection::count())
-                ->description(McpConnection::where('status', 'active')->count().' active')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
-                ->color('blue'),
+        return Cache::remember('mcp_stats_widget', $this->cacheInterval, function () {
+            // Get base counts
+            $totalConnections = McpConnection::count();
+            $activeConnections = McpConnection::where('status', 'active')->count();
+            $totalDatasets = Dataset::count();
+            $totalDocuments = Document::count();
+            $activeApiKeys = ApiKey::where('is_active', true)->count();
 
-            Stat::make('Datasets', Dataset::count())
-                ->description(Dataset::where('created_at', '>=', now()->subWeek())->count().' this week')
-                ->descriptionIcon('heroicon-m-table-cells')
-                ->color('green'),
+            // Get weekly counts for trends
+            $weeklyDatasets = Dataset::where('created_at', '>=', now()->subWeek())->count();
+            $weeklyDocuments = Document::where('created_at', '>=', now()->subWeek())->count();
+            $weeklyConnections = McpConnection::where('created_at', '>=', now()->subWeek())->count();
 
-            Stat::make('Documents', Document::count())
-                ->description(Document::where('created_at', '>=', now()->subWeek())->count().' this week')
-                ->descriptionIcon('heroicon-m-document-text')
-                ->color('purple'),
+            // Calculate growth percentages
+            $connectionGrowth = $totalConnections > 0 ? round(($weeklyConnections / $totalConnections) * 100, 1) : 0;
+            $datasetGrowth = $totalDatasets > 0 ? round(($weeklyDatasets / $totalDatasets) * 100, 1) : 0;
+            $documentGrowth = $totalDocuments > 0 ? round(($weeklyDocuments / $totalDocuments) * 100, 1) : 0;
 
-            Stat::make('Active API Keys', ApiKey::where('is_active', true)->count())
-                ->description('Authentication tokens')
-                ->descriptionIcon('heroicon-m-key')
-                ->color('yellow'),
-        ];
+            return [
+                Stat::make('MCP Connections', $totalConnections)
+                    ->description($activeConnections.' active'.($weeklyConnections > 0 ? " • +{$weeklyConnections} this week" : ''))
+                    ->descriptionIcon($connectionGrowth > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-signal')
+                    ->color($activeConnections > 0 ? 'success' : 'warning')
+                    ->chart($this->getConnectionTrend()),
+
+                Stat::make('Datasets', $totalDatasets)
+                    ->description($weeklyDatasets.' this week'.($datasetGrowth > 0 ? " • +{$datasetGrowth}% growth" : ''))
+                    ->descriptionIcon($datasetGrowth > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-table-cells')
+                    ->color('info')
+                    ->chart($this->getDatasetTrend()),
+
+                Stat::make('Documents', $totalDocuments)
+                    ->description($weeklyDocuments.' this week'.($documentGrowth > 0 ? " • +{$documentGrowth}% growth" : ''))
+                    ->descriptionIcon($documentGrowth > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-document-text')
+                    ->color('primary')
+                    ->chart($this->getDocumentTrend()),
+
+                Stat::make('Active API Keys', $activeApiKeys)
+                    ->description($this->getApiKeyDescription($activeApiKeys))
+                    ->descriptionIcon('heroicon-m-key')
+                    ->color($activeApiKeys > 0 ? 'warning' : 'gray'),
+            ];
+        });
+    }
+
+    private function getConnectionTrend(): array
+    {
+        return Cache::remember('connection_trend', 3600, function () {
+            $data = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $date = now()->subDays($i)->startOfDay();
+                $count = McpConnection::where('created_at', '>=', $date)
+                    ->where('created_at', '<', $date->copy()->addDay())
+                    ->count();
+                $data[] = $count;
+            }
+
+            return $data;
+        });
+    }
+
+    private function getDatasetTrend(): array
+    {
+        return Cache::remember('dataset_trend', 3600, function () {
+            $data = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $date = now()->subDays($i)->startOfDay();
+                $count = Dataset::where('created_at', '>=', $date)
+                    ->where('created_at', '<', $date->copy()->addDay())
+                    ->count();
+                $data[] = $count;
+            }
+
+            return $data;
+        });
+    }
+
+    private function getDocumentTrend(): array
+    {
+        return Cache::remember('document_trend', 3600, function () {
+            $data = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $date = now()->subDays($i)->startOfDay();
+                $count = Document::where('created_at', '>=', $date)
+                    ->where('created_at', '<', $date->copy()->addDay())
+                    ->count();
+                $data[] = $count;
+            }
+
+            return $data;
+        });
+    }
+
+    private function getApiKeyDescription(int $activeKeys): string
+    {
+        $expiringKeys = ApiKey::where('is_active', true)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now()->addDays(30))
+            ->count();
+
+        if ($expiringKeys > 0) {
+            return "Authentication tokens • {$expiringKeys} expiring soon";
+        }
+
+        return 'Authentication tokens';
     }
 }
