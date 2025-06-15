@@ -137,9 +137,17 @@ This application provides a Model Context Protocol (MCP) server for data managem
 
 ## Filament v4 Form Patterns
 
-**⚠️ CRITICAL: ALL Filament v4 forms use the UNIVERSAL Schema pattern. See the definitive guide for complete details:**
+**🚨 CRITICAL: ALWAYS REFER TO THE DEFINITIVE GUIDE WHEN CREATING ANY FILAMENT FORMS OR PAGES!**
 
-👉 **[Filament v4 Definitive Implementation Guide](plan/00_filament_v4_definitive_guide.md)**
+**👉 [Filament v4 Definitive Implementation Guide](plan/00_filament_v4_definitive_guide.md) ⭐ MANDATORY REFERENCE ⭐**
+
+**⚠️ BEFORE creating any new Filament Resources, Pages, or Forms, you MUST:**
+1. **READ** `plan/00_filament_v4_definitive_guide.md` completely
+2. **FOLLOW** the Universal Schema patterns exactly as documented  
+3. **VERIFY** your implementation matches the battle-tested examples
+4. **NEVER** deviate from the proven patterns without explicit justification
+
+**This guide is verified against the actual Filament v4 source code AND this working codebase. All patterns are battle-tested and guaranteed to work.**
 
 ### UNIVERSAL Pattern (Resources AND Pages)
 ```php

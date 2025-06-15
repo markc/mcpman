@@ -30,6 +30,26 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\ConversationManager::class, function ($app) {
             return new \App\Services\ConversationManager;
         });
+
+        // Register PromptTemplateManager as singleton
+        $this->app->singleton(\App\Services\PromptTemplateManager::class, function ($app) {
+            return new \App\Services\PromptTemplateManager;
+        });
+
+        // Register AnalyticsManager as singleton
+        $this->app->singleton(\App\Services\AnalyticsManager::class, function ($app) {
+            return new \App\Services\AnalyticsManager;
+        });
+
+        // Register ImportExportManager as singleton
+        $this->app->singleton(\App\Services\ImportExportManager::class, function ($app) {
+            return new \App\Services\ImportExportManager;
+        });
+
+        // Register McpHealthCheckService as singleton
+        $this->app->singleton(\App\Services\McpHealthCheckService::class, function ($app) {
+            return new \App\Services\McpHealthCheckService;
+        });
     }
 
     /**

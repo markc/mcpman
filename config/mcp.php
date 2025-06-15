@@ -21,6 +21,59 @@ return [
         'api_key' => env('CLAUDE_API_KEY'),
         'command' => env('CLAUDE_COMMAND', 'claude'),
         'config_check' => env('CLAUDE_CONFIG_CHECK', true),
+        'auth_timeout' => env('CLAUDE_AUTH_TIMEOUT', 10), // seconds
+        'retry_delay' => env('CLAUDE_RETRY_DELAY', 1000), // milliseconds
+        'exponential_backoff' => env('CLAUDE_EXPONENTIAL_BACKOFF', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Health Check Configuration
+    |--------------------------------------------------------------------------
+    |
+    | System health monitoring and diagnostics configuration.
+    |
+    */
+    'health_check' => [
+        'enabled' => env('MCP_HEALTH_CHECK_ENABLED', true),
+        'interval' => env('MCP_HEALTH_CHECK_INTERVAL', 60), // seconds
+        'timeout' => env('MCP_HEALTH_CHECK_TIMEOUT', 15), // seconds
+        'cache_key' => 'mcp_health_status',
+        'cache_ttl' => env('CLAUDE_CACHE_TTL', 300), // 5 minutes
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Performance Monitoring
+    |--------------------------------------------------------------------------
+    |
+    | Performance metrics and monitoring thresholds.
+    |
+    */
+    'monitoring' => [
+        'enabled' => env('MCP_MONITORING_ENABLED', true),
+        'slow_query_threshold' => env('MCP_SLOW_QUERY_THRESHOLD', 10000), // milliseconds
+        'error_rate_threshold' => env('MCP_ERROR_RATE_THRESHOLD', 0.1), // 10%
+        'metrics_retention_days' => env('MCP_METRICS_RETENTION_DAYS', 30),
+        'log_requests' => env('MCP_LOG_REQUESTS', true),
+        'log_responses' => env('MCP_LOG_RESPONSES', false), // May contain sensitive data
+        'log_performance' => env('MCP_LOG_PERFORMANCE', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Security Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Security settings for MCP connections and data handling.
+    |
+    */
+    'security' => [
+        'sanitize_inputs' => env('MCP_SANITIZE_INPUTS', true),
+        'max_request_size' => env('MCP_MAX_REQUEST_SIZE', 1024 * 1024), // 1MB
+        'allowed_tools' => env('MCP_ALLOWED_TOOLS', null), // Comma-separated list or null for all
+        'rate_limit_enabled' => env('MCP_RATE_LIMIT_ENABLED', true),
+        'rate_limit_per_minute' => env('MCP_RATE_LIMIT_PER_MINUTE', 60),
     ],
 
     'server' => [
