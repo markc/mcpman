@@ -10,6 +10,8 @@ class McpHealthCheckService
 {
     private array $healthStatus = [];
 
+    private ?array $cachedDashboardData = null;
+
     public function __construct()
     {
         $this->healthStatus = [
@@ -44,8 +46,18 @@ class McpHealthCheckService
         // Check Claude CLI availability
         $this->checkClaudeAvailability();
 
+        // Small delay to avoid process conflicts
+        if ($this->healthStatus['claude_available']) {
+            usleep(500000); // 0.5 second delay
+        }
+
         // Check Claude authentication
         $this->checkClaudeAuthentication();
+
+        // Small delay to avoid process conflicts
+        if ($this->healthStatus['claude_authenticated']) {
+            usleep(500000); // 0.5 second delay
+        }
 
         // Check MCP server responsiveness
         $this->checkMcpServerResponsiveness();
@@ -105,17 +117,20 @@ class McpHealthCheckService
         }
 
         try {
-            $timeout = config('mcp.claude.auth_timeout', 10);
-            $result = Process::timeout($timeout)->run(['claude', 'config', 'get']);
+            $timeout = config('mcp.claude.auth_timeout', 30); // Increased timeout
+            // Use a minimal prompt to test Claude authentication quickly
+            $result = Process::timeout($timeout)->run(['claude', '-p', 'hi']);
 
-            if ($result->successful()) {
+            if ($result->successful() && ! empty(trim($result->output()))) {
                 $this->healthStatus['claude_authenticated'] = true;
                 Log::debug('Claude authentication verified');
             } else {
                 $this->healthStatus['claude_authenticated'] = false;
                 $this->addError('Claude authentication failed', [
                     'exit_code' => $result->exitCode(),
-                    'suggestion' => 'Run `claude auth` to authenticate',
+                    'output' => $result->output(),
+                    'error' => $result->errorOutput(),
+                    'suggestion' => 'Run `claude auth` to authenticate with Claude',
                 ]);
             }
         } catch (\Exception $e) {
@@ -136,8 +151,8 @@ class McpHealthCheckService
         }
 
         try {
-            $timeout = config('mcp.health_check.timeout', 15);
-            $testCommand = ['claude', '-p', 'Hello, this is a health check test.'];
+            $timeout = config('mcp.health_check.timeout', 30); // Increased timeout
+            $testCommand = ['claude', '-p', 'ok'];
 
             $startTime = microtime(true);
             $result = Process::timeout($timeout)->run($testCommand);
@@ -229,6 +244,7 @@ class McpHealthCheckService
     {
         $cacheKey = config('mcp.health_check.cache_key', 'mcp_health_status');
         Cache::forget($cacheKey);
+        $this->cachedDashboardData = null; // Clear dashboard cache too
     }
 
     /**
@@ -236,9 +252,14 @@ class McpHealthCheckService
      */
     public function getHealthDashboardData(): array
     {
-        $health = $this->performHealthCheck();
+        // Use singleton pattern to avoid multiple health checks in single page load
+        if ($this->cachedDashboardData !== null) {
+            return $this->cachedDashboardData;
+        }
 
-        return [
+        $health = $this->performHealthCheck(true); // Use cache for dashboard to avoid conflicts
+
+        $this->cachedDashboardData = [
             'status' => $health['overall_health'] ?? 'unknown',
             'score' => $health['health_score'] ?? 0,
             'components' => [
@@ -256,6 +277,8 @@ class McpHealthCheckService
             'errors' => $health['errors'] ?? [],
             'recommendations' => $this->getHealthRecommendations($health),
         ];
+
+        return $this->cachedDashboardData;
     }
 
     /**

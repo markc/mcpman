@@ -3,7 +3,9 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Widgets\HealthOverviewWidget;
+use App\Filament\Widgets\RecommendationsWidget;
 use App\Filament\Widgets\SystemComponentsWidget;
+use App\Filament\Widgets\SystemErrorsWidget;
 use App\Services\McpHealthCheckService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -27,14 +29,16 @@ class McpSystemHealth extends Page
         return [
             HealthOverviewWidget::class,
             SystemComponentsWidget::class,
+            RecommendationsWidget::class,
+            SystemErrorsWidget::class,
         ];
     }
 
     public function getHeaderWidgetsColumns(): int|array
     {
         return [
-            'md' => 4,
-            'xl' => 4,
+            'md' => 2,
+            'xl' => 2,
         ];
     }
 
@@ -214,16 +218,13 @@ class McpSystemHealth extends Page
     }
 
     // Auto-refresh every 60 seconds
-    protected int $pollingInterval = 60;
+    protected ?string $pollingInterval = '60s';
 
     public function poll(): void
     {
-        // Only refresh if health check is not cached (to avoid excessive checks)
+        // Force refresh health data on each poll
         $healthService = app(McpHealthCheckService::class);
-        $cached = $healthService->getCachedHealthStatus();
-
-        if (! $cached) {
-            $this->loadHealthData();
-        }
+        $healthService->clearHealthCache();
+        $this->loadHealthData();
     }
 }

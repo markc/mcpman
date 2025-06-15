@@ -277,20 +277,6 @@ class PersistentMcpManager
     }
 
     /**
-     * Send a notification (no response expected)
-     */
-    public function sendNotification(string $connectionId, string $method, array $params = []): void
-    {
-        $notification = [
-            'jsonrpc' => '2.0',
-            'method' => $method,
-            'params' => $params,
-        ];
-
-        $this->sendMessage($connectionId, $notification);
-    }
-
-    /**
      * Read response from process stdout
      */
     private function readResponse(string $connectionId, int $requestId, int $timeoutSeconds): array
@@ -580,9 +566,9 @@ class PersistentMcpManager
     }
 
     /**
-     * Phase 3 Enhancement: Send notification (no response expected)
+     * Send a notification (no response expected)
      */
-    private function sendNotification(string $connectionId, string $method, array $params = []): void
+    public function sendNotification(string $connectionId, string $method, array $params = []): void
     {
         try {
             $notification = [

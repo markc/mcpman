@@ -13,6 +13,7 @@ class HealthOverviewWidget extends BaseWidget
     protected function getStats(): array
     {
         $healthService = app(McpHealthCheckService::class);
+        // Force fresh data for widgets
         $healthData = $healthService->getHealthDashboardData();
 
         return [
@@ -75,5 +76,5 @@ class HealthOverviewWidget extends BaseWidget
         }
     }
 
-    protected ?string $pollingInterval = '60s'; // Refresh every 60 seconds
+    // Polling handled by parent page
 }
