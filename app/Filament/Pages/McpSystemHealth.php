@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Widgets\HealthOverviewWidget;
+use App\Filament\Widgets\SystemComponentsWidget;
 use App\Services\McpHealthCheckService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -18,6 +20,22 @@ class McpSystemHealth extends Page
     public function getView(): string
     {
         return 'filament.pages.mcp-system-health';
+    }
+
+    public function getHeaderWidgets(): array
+    {
+        return [
+            HealthOverviewWidget::class,
+            SystemComponentsWidget::class,
+        ];
+    }
+
+    public function getHeaderWidgetsColumns(): int|array
+    {
+        return [
+            'md' => 4,
+            'xl' => 4,
+        ];
     }
 
     public array $healthData = [];
@@ -187,43 +205,12 @@ class McpSystemHealth extends Page
         };
     }
 
-    public function getHealthCards(): array
+    /**
+     * Get health data for widgets and page content
+     */
+    public function getHealthData(): array
     {
-        $score = $this->healthData['score'] ?? 0;
-        $status = $this->healthData['status'] ?? 'unknown';
-        $lastCheck = $this->healthData['last_check'] ?? null;
-        $responseTime = $this->healthData['performance']['Response Time'] ?? 'Unknown';
-
-        return [
-            [
-                'label' => 'Overall Health',
-                'value' => $score.'/100',
-                'description' => ucfirst($status),
-                'icon' => $this->getStatusIcon(),
-                'color' => $this->getStatusColor(),
-            ],
-            [
-                'label' => 'Response Time',
-                'value' => $responseTime,
-                'description' => $this->healthData['performance']['Assessment'] ?? 'Unknown',
-                'icon' => 'heroicon-o-clock',
-                'color' => ($this->healthData['performance']['Assessment'] ?? '') === 'fast' ? 'success' : 'warning',
-            ],
-            [
-                'label' => 'System Issues',
-                'value' => count($this->healthData['errors'] ?? []),
-                'description' => 'Active problems',
-                'icon' => 'heroicon-o-exclamation-triangle',
-                'color' => count($this->healthData['errors'] ?? []) === 0 ? 'success' : 'danger',
-            ],
-            [
-                'label' => 'Last Check',
-                'value' => $lastCheck ? \Carbon\Carbon::parse($lastCheck)->diffForHumans() : 'Never',
-                'description' => 'Health verification',
-                'icon' => 'heroicon-o-clock',
-                'color' => 'info',
-            ],
-        ];
+        return $this->healthData;
     }
 
     // Auto-refresh every 60 seconds
