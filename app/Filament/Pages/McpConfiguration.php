@@ -3,9 +3,8 @@
 namespace App\Filament\Pages;
 
 use Filament\Actions\Action;
-use Filament\Forms\Components\Group;
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -42,127 +41,137 @@ class McpConfiguration extends Page implements HasForms
     protected function getFormSchema(): array
     {
         return [
-            Section::make('Server Configuration')
-                ->description('Configure MCP server settings')
-                ->schema([
-                    Group::make([
-                        TextInput::make('timeout')
-                            ->label('Connection Timeout (ms)')
-                            ->numeric()
-                            ->default(60000)
-                            ->required()
-                            ->helperText('Maximum time to wait for MCP connections'),
+            // Server Configuration Section
+            Placeholder::make('server_config_header')
+                ->label('Server Configuration')
+                ->content('Configure MCP server settings')
+                ->columnSpanFull(),
 
-                        TextInput::make('max_connections')
-                            ->label('Max Concurrent Connections')
-                            ->numeric()
-                            ->default(10)
-                            ->required()
-                            ->helperText('Maximum number of simultaneous MCP connections'),
-                    ])->columns(2),
+            TextInput::make('timeout')
+                ->label('Connection Timeout (ms)')
+                ->numeric()
+                ->default(60000)
+                ->required()
+                ->helperText('Maximum time to wait for MCP connections'),
 
-                    Toggle::make('persistent_connections')
-                        ->label('Use Persistent Connections')
-                        ->default(true)
-                        ->helperText('Keep connections alive for better performance'),
+            TextInput::make('max_connections')
+                ->label('Max Concurrent Connections')
+                ->numeric()
+                ->default(10)
+                ->required()
+                ->helperText('Maximum number of simultaneous MCP connections'),
 
-                    Toggle::make('auto_reconnect')
-                        ->label('Auto Reconnect')
-                        ->default(true)
-                        ->helperText('Automatically reconnect when connections drop'),
-                ]),
+            Toggle::make('persistent_connections')
+                ->label('Use Persistent Connections')
+                ->default(true)
+                ->helperText('Keep connections alive for better performance')
+                ->columnSpanFull(),
 
-            Section::make('Client Configuration')
-                ->description('Configure MCP client behavior')
-                ->schema([
-                    Group::make([
-                        TextInput::make('retry_attempts')
-                            ->label('Retry Attempts')
-                            ->numeric()
-                            ->default(3)
-                            ->required()
-                            ->helperText('Number of retry attempts for failed requests'),
+            Toggle::make('auto_reconnect')
+                ->label('Auto Reconnect')
+                ->default(true)
+                ->helperText('Automatically reconnect when connections drop')
+                ->columnSpanFull(),
 
-                        TextInput::make('retry_delay')
-                            ->label('Retry Delay (ms)')
-                            ->numeric()
-                            ->default(1000)
-                            ->required()
-                            ->helperText('Delay between retry attempts'),
-                    ])->columns(2),
+            // Client Configuration Section
+            Placeholder::make('client_config_header')
+                ->label('Client Configuration')
+                ->content('Configure MCP client behavior')
+                ->columnSpanFull(),
 
-                    Toggle::make('debug_mode')
-                        ->label('Debug Mode')
-                        ->default(false)
-                        ->helperText('Enable detailed logging for troubleshooting'),
-                ]),
+            TextInput::make('retry_attempts')
+                ->label('Retry Attempts')
+                ->numeric()
+                ->default(3)
+                ->required()
+                ->helperText('Number of retry attempts for failed requests'),
 
-            Section::make('Security Settings')
-                ->description('Configure security and authentication')
-                ->schema([
-                    Select::make('auth_method')
-                        ->label('Default Authentication Method')
-                        ->options([
-                            'none' => 'No Authentication',
-                            'bearer' => 'Bearer Token',
-                            'api_key' => 'API Key',
-                            'oauth' => 'OAuth 2.0',
-                        ])
-                        ->default('none')
-                        ->required(),
+            TextInput::make('retry_delay')
+                ->label('Retry Delay (ms)')
+                ->numeric()
+                ->default(1000)
+                ->required()
+                ->helperText('Delay between retry attempts'),
 
-                    TextInput::make('rate_limit')
-                        ->label('Rate Limit (requests per minute)')
-                        ->numeric()
-                        ->default(60)
-                        ->required()
-                        ->helperText('Maximum requests per minute per connection'),
+            Toggle::make('debug_mode')
+                ->label('Debug Mode')
+                ->default(false)
+                ->helperText('Enable detailed logging for troubleshooting')
+                ->columnSpanFull(),
 
-                    Toggle::make('ssl_verify')
-                        ->label('Verify SSL Certificates')
-                        ->default(true)
-                        ->helperText('Verify SSL certificates for secure connections'),
-                ]),
+            // Security Settings Section
+            Placeholder::make('security_config_header')
+                ->label('Security Settings')
+                ->content('Configure security and authentication')
+                ->columnSpanFull(),
 
-            Section::make('Broadcasting Configuration')
-                ->description('Configure real-time broadcasting')
-                ->schema([
-                    Toggle::make('broadcasting_enabled')
-                        ->label('Enable Broadcasting')
-                        ->default(true)
-                        ->helperText('Enable real-time updates via WebSockets'),
+            Select::make('auth_method')
+                ->label('Default Authentication Method')
+                ->options([
+                    'none' => 'No Authentication',
+                    'bearer' => 'Bearer Token',
+                    'api_key' => 'API Key',
+                    'oauth' => 'OAuth 2.0',
+                ])
+                ->default('none')
+                ->required(),
 
-                    Group::make([
-                        TextInput::make('broadcast_driver')
-                            ->label('Broadcast Driver')
-                            ->default('reverb')
-                            ->required()
-                            ->helperText('Broadcasting driver to use'),
+            TextInput::make('rate_limit')
+                ->label('Rate Limit (requests per minute)')
+                ->numeric()
+                ->default(60)
+                ->required()
+                ->helperText('Maximum requests per minute per connection'),
 
-                        TextInput::make('broadcast_queue')
-                            ->label('Broadcast Queue')
-                            ->default('default')
-                            ->required()
-                            ->helperText('Queue to use for broadcasting jobs'),
-                    ])->columns(2),
-                ]),
+            Toggle::make('ssl_verify')
+                ->label('Verify SSL Certificates')
+                ->default(true)
+                ->helperText('Verify SSL certificates for secure connections')
+                ->columnSpanFull(),
 
-            Section::make('Advanced Settings')
-                ->description('Advanced configuration options')
-                ->collapsible()
-                ->schema([
-                    KeyValue::make('custom_headers')
-                        ->label('Custom HTTP Headers')
-                        ->keyLabel('Header Name')
-                        ->valueLabel('Header Value')
-                        ->helperText('Custom headers to include in MCP requests'),
+            // Broadcasting Configuration Section
+            Placeholder::make('broadcasting_config_header')
+                ->label('Broadcasting Configuration')
+                ->content('Configure real-time broadcasting')
+                ->columnSpanFull(),
 
-                    KeyValue::make('environment_variables')
-                        ->label('Environment Variables')
-                        ->keyLabel('Variable Name')
-                        ->valueLabel('Variable Value')
-                        ->helperText('Environment variables for MCP processes'),
-                ]),
+            Toggle::make('broadcasting_enabled')
+                ->label('Enable Broadcasting')
+                ->default(true)
+                ->helperText('Enable real-time updates via WebSockets')
+                ->columnSpanFull(),
+
+            TextInput::make('broadcast_driver')
+                ->label('Broadcast Driver')
+                ->default('reverb')
+                ->required()
+                ->helperText('Broadcasting driver to use'),
+
+            TextInput::make('broadcast_queue')
+                ->label('Broadcast Queue')
+                ->default('default')
+                ->required()
+                ->helperText('Queue to use for broadcasting jobs'),
+
+            // Advanced Settings Section
+            Placeholder::make('advanced_config_header')
+                ->label('Advanced Settings')
+                ->content('Advanced configuration options')
+                ->columnSpanFull(),
+
+            KeyValue::make('custom_headers')
+                ->label('Custom HTTP Headers')
+                ->keyLabel('Header Name')
+                ->valueLabel('Header Value')
+                ->helperText('Custom headers to include in MCP requests')
+                ->columnSpanFull(),
+
+            KeyValue::make('environment_variables')
+                ->label('Environment Variables')
+                ->keyLabel('Variable Name')
+                ->valueLabel('Variable Value')
+                ->helperText('Environment variables for MCP processes')
+                ->columnSpanFull(),
         ];
     }
 
@@ -171,7 +180,7 @@ class McpConfiguration extends Page implements HasForms
         return $schema
             ->components($this->getFormSchema())
             ->statePath('data')
-            ->columns(1);
+            ->columns(2);
     }
 
     protected function getHeaderActions(): array

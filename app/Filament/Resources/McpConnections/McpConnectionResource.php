@@ -15,9 +15,13 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class McpConnectionResource extends Resource
 {
@@ -27,70 +31,98 @@ class McpConnectionResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->required(),
+                Section::make('Connection Information')
+                    ->description('Basic connection details and endpoint configuration')
+                    ->schema([
+                        TextInput::make('name')
+                            ->label('Connection Name')
+                            ->required()
+                            ->maxLength(255)
+                            ->helperText('Descriptive name for this MCP connection'),
 
-                TextInput::make('endpoint_url')
-                    ->label('Endpoint URL')
-                    ->helperText('For HTTP/WebSocket: enter URL (e.g. http://localhost:3000). For stdio: enter command path (e.g. /usr/bin/claude mcp serve)')
-                    ->default('/usr/bin/claude mcp serve')
-                    ->required(),
+                        TextInput::make('endpoint_url')
+                            ->label('Endpoint URL / Command')
+                            ->helperText('For HTTP/WebSocket: URL (e.g. http://localhost:3000). For stdio: command path (e.g. /usr/bin/claude mcp serve)')
+                            ->default('/usr/bin/claude mcp serve')
+                            ->required()
+                            ->columnSpanFull(),
 
-                Select::make('transport_type')
-                    ->label('Transport Type')
-                    ->options([
-                        'stdio' => 'Standard I/O',
-                        'http' => 'HTTP',
-                        'websocket' => 'WebSocket',
+                        Select::make('transport_type')
+                            ->label('Transport Type')
+                            ->helperText('Communication protocol for MCP connection')
+                            ->options([
+                                'stdio' => 'Standard I/O (Local process)',
+                                'http' => 'HTTP (Web service)',
+                                'websocket' => 'WebSocket (Real-time)',
+                            ])
+                            ->required()
+                            ->default('stdio')
+                            ->live(),
+
+                        Select::make('status')
+                            ->label('Connection Status')
+                            ->helperText('Current operational state')
+                            ->options([
+                                'active' => 'Active - Ready for use',
+                                'inactive' => 'Inactive - Disabled',
+                                'error' => 'Error - Needs attention',
+                            ])
+                            ->required()
+                            ->default('inactive'),
                     ])
-                    ->required()
-                    ->default('stdio')
-                    ->live(),
+                    ->columns(2)
+                    ->columnSpanFull(),
 
-                Select::make('status')
-                    ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                        'error' => 'Error',
-                    ])
-                    ->required()
-                    ->default('inactive'),
+                Section::make('Configuration')
+                    ->description('Authentication, capabilities, and advanced settings')
+                    ->schema([
+                        KeyValue::make('auth_config')
+                            ->label('Authentication Configuration')
+                            ->helperText('Security credentials and authentication method')
+                            ->keyLabel('Setting')
+                            ->valueLabel('Value')
+                            ->default([
+                                'type' => 'bearer',
+                                'token' => '',
+                            ])
+                            ->columnSpanFull(),
 
-                KeyValue::make('auth_config')
-                    ->label('Authentication Config')
-                    ->keyLabel('Key')
-                    ->valueLabel('Value')
-                    ->default([
-                        'type' => 'bearer',
-                        'token' => '',
+                        KeyValue::make('capabilities')
+                            ->label('MCP Capabilities')
+                            ->helperText('Features and functionality enabled for this connection')
+                            ->keyLabel('Capability')
+                            ->valueLabel('Enabled (true/false)')
+                            ->default([
+                                'tools' => 'true',
+                                'prompts' => 'true',
+                                'resources' => 'true',
+                            ])
+                            ->columnSpanFull(),
+
+                        KeyValue::make('metadata')
+                            ->label('Additional Metadata')
+                            ->helperText('Custom properties and configuration options')
+                            ->keyLabel('Property')
+                            ->valueLabel('Value')
+                            ->columnSpanFull(),
                     ])
                     ->columnSpanFull(),
 
-                KeyValue::make('capabilities')
-                    ->label('Capabilities')
-                    ->keyLabel('Capability')
-                    ->valueLabel('Enabled')
-                    ->default([
-                        'tools' => 'true',
-                        'prompts' => 'true',
-                        'resources' => 'true',
+                Section::make('Connection Status')
+                    ->description('Runtime information and diagnostics')
+                    ->schema([
+                        Placeholder::make('last_connected_at')
+                            ->label('Last Connected')
+                            ->content(fn ($record) => $record?->last_connected_at?->diffForHumans() ?? 'Never')
+                            ->hiddenOn('create'),
+
+                        Placeholder::make('last_error')
+                            ->label('Last Error')
+                            ->content(fn ($record) => $record?->last_error ?? 'None')
+                            ->hiddenOn('create'),
                     ])
-                    ->columnSpanFull(),
-
-                KeyValue::make('metadata')
-                    ->label('Metadata')
-                    ->keyLabel('Key')
-                    ->valueLabel('Value')
-                    ->columnSpanFull(),
-
-                Placeholder::make('last_connected_at')
-                    ->label('Last Connected')
-                    ->content(fn ($record) => $record?->last_connected_at?->diffForHumans() ?? 'Never')
-                    ->hiddenOn('create'),
-
-                Placeholder::make('last_error')
-                    ->label('Last Error')
-                    ->content(fn ($record) => $record?->last_error ?? 'None')
+                    ->columns(2)
+                    ->columnSpanFull()
                     ->hiddenOn('create'),
 
                 Hidden::make('user_id')
@@ -147,7 +179,34 @@ class McpConnectionResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
-                //
+                SelectFilter::make('transport_type')
+                    ->options([
+                        'stdio' => 'Standard I/O',
+                        'http' => 'HTTP',
+                        'websocket' => 'WebSocket',
+                    ]),
+
+                SelectFilter::make('status')
+                    ->options([
+                        'active' => 'Active',
+                        'inactive' => 'Inactive',
+                        'error' => 'Error',
+                    ]),
+
+                Filter::make('recently_connected')
+                    ->label('Connected Recently')
+                    ->query(fn (Builder $query): Builder => $query->where('last_connected_at', '>=', now()->subDay()))
+                    ->toggle(),
+
+                Filter::make('has_errors')
+                    ->label('Has Errors')
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('last_error')->where('last_error', '!=', ''))
+                    ->toggle(),
+
+                Filter::make('recent')
+                    ->label('Created Recently')
+                    ->query(fn (Builder $query): Builder => $query->where('created_at', '>=', now()->subWeek()))
+                    ->toggle(),
             ])
             ->recordActions([
                 EditAction::make(),
