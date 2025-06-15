@@ -75,56 +75,101 @@ class PersistentMcpManager
     }
 
     /**
-     * Start stdio-based connection (for Claude Code)
+     * Phase 3 Enhancement: Improved stdio-based connection with better process management
      */
     private function startStdioConnection(McpConnection $connection): bool
     {
         $connectionId = $connection->id;
 
-        // Prepare command based on endpoint_url (which contains the command for stdio)
+        // Phase 3: Enhanced command preparation with fallback strategies
         $commandParts = explode(' ', trim($connection->endpoint_url));
         $command = array_shift($commandParts);
-        $args = array_merge($commandParts, ['--debug']);
 
-        Log::info('Starting stdio MCP process', [
+        // Add enhanced debugging and timeout arguments
+        $args = array_merge($commandParts, [
+            '--debug',
+            '--timeout', (string) (config('mcp.timeout', 60000) / 1000), // Convert to seconds
+        ]);
+
+        Log::info('Starting enhanced stdio MCP process', [
             'connection_id' => $connectionId,
             'command' => $command,
             'args' => $args,
+            'environment_variables' => [
+                'MCP_TIMEOUT' => config('mcp.timeout', 60000),
+                'HAS_API_KEY' => ! empty(config('mcp.claude.api_key')),
+            ],
         ]);
 
-        // Create persistent process
+        // Phase 3: Enhanced process configuration with better resource limits
         $process = new SymfonyProcess(
             array_merge([$command], $args),
-            null,
+            null, // Working directory
             [
                 'MCP_TIMEOUT' => config('mcp.timeout', 60000),
                 'ANTHROPIC_API_KEY' => config('mcp.claude.api_key'),
+                'MCP_CLIENT_NAME' => 'MCPman-Laravel',
+                'MCP_LOG_LEVEL' => config('mcp.debug_logging', false) ? 'debug' : 'info',
             ],
-            null,
-            null // No timeout - persistent connection
+            null, // Input
+            null  // No timeout - persistent connection
         );
 
-        $process->start();
+        // Phase 3: Enhanced process startup with better error handling
+        try {
+            $process->start();
 
-        // Wait a moment for process to initialize
-        usleep(500000); // 0.5 seconds
+            // Progressive wait strategy for better startup detection
+            $maxWaitTime = 5; // seconds
+            $checkInterval = 0.1; // 100ms
+            $waited = 0;
 
-        if (! $process->isRunning()) {
-            throw new \Exception('Process failed to start: '.$process->getErrorOutput());
+            while ($waited < $maxWaitTime) {
+                if ($process->isRunning()) {
+                    break;
+                }
+
+                usleep($checkInterval * 1000000); // Convert to microseconds
+                $waited += $checkInterval;
+
+                // Check for immediate failures
+                if ($process->isTerminated()) {
+                    throw new \Exception('Process terminated during startup: '.$process->getErrorOutput());
+                }
+            }
+
+            if (! $process->isRunning()) {
+                throw new \Exception('Process failed to start within timeout period');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to start MCP process', [
+                'connection_id' => $connectionId,
+                'error' => $e->getMessage(),
+                'command' => $command,
+                'exit_code' => $process->getExitCode(),
+                'error_output' => $process->getErrorOutput(),
+            ]);
+
+            throw $e;
         }
 
         $this->connectionProcesses[$connectionId] = $process;
 
-        // Perform MCP handshake
+        // Phase 3: Initialize communication streams with better error handling
+        $this->initializeStreams($connectionId, $process);
+
+        // Perform enhanced MCP handshake
         return $this->performHandshake($connectionId);
     }
 
     /**
-     * Perform JSON-RPC 2.0 MCP handshake
+     * Phase 3 Enhancement: Improved JSON-RPC 2.0 MCP handshake with better error handling
      */
     private function performHandshake(string $connectionId): bool
     {
         try {
+            // Phase 3: Enhanced initialization with comprehensive capabilities
             $initRequest = [
                 'jsonrpc' => '2.0',
                 'id' => $this->getNextRequestId(),
@@ -132,21 +177,43 @@ class PersistentMcpManager
                 'params' => [
                     'protocolVersion' => config('mcp.server.protocol_version', '2024-11-05'),
                     'capabilities' => [
-                        'tools' => [],
-                        'resources' => [],
-                        'prompts' => [],
+                        'tools' => [
+                            'listChanged' => true,
+                        ],
+                        'resources' => [
+                            'subscribe' => true,
+                            'listChanged' => true,
+                        ],
+                        'prompts' => [
+                            'listChanged' => true,
+                        ],
+                        'logging' => [
+                            'level' => config('mcp.debug_logging', false) ? 'debug' : 'info',
+                        ],
+                        'sampling' => [],
                     ],
                     'clientInfo' => [
                         'name' => 'MCPman-Laravel-Client',
                         'version' => '1.0.0',
+                        'description' => 'Laravel Filament MCP Integration Client with Phase 3 enhancements',
                     ],
                 ],
             ];
 
-            $response = $this->sendMessage($connectionId, $initRequest);
+            Log::info('Performing enhanced MCP handshake', [
+                'connection_id' => $connectionId,
+                'protocol_version' => $initRequest['params']['protocolVersion'],
+                'client_capabilities' => array_keys($initRequest['params']['capabilities']),
+            ]);
+
+            $response = $this->sendMessage($connectionId, $initRequest, 10); // 10 second timeout for handshake
 
             if (isset($response['result'])) {
-                Log::info('MCP handshake successful', [
+                // Phase 3: Store server capabilities for advanced feature support
+                $serverCapabilities = $response['result']['capabilities'] ?? [];
+                $this->storeServerCapabilities($connectionId, $serverCapabilities);
+
+                Log::info('Enhanced MCP handshake successful', [
                     'connection_id' => $connectionId,
                     'server_info' => $response['result']['serverInfo'] ?? 'unknown',
                     'capabilities' => $response['result']['capabilities'] ?? [],
@@ -176,9 +243,9 @@ class PersistentMcpManager
     }
 
     /**
-     * Send a JSON-RPC request and wait for response
+     * Phase 3 Enhancement: Send a JSON-RPC request and wait for response with configurable timeout
      */
-    public function sendMessage(string $connectionId, array $message): array
+    public function sendMessage(string $connectionId, array $message, ?int $timeoutSeconds = null): array
     {
         if (! isset($this->connectionProcesses[$connectionId])) {
             throw new \Exception("No active connection for ID: $connectionId");
@@ -444,6 +511,184 @@ class PersistentMcpManager
 
         } catch (\Exception $e) {
             Log::warning('MCP health check failed', [
+                'connection_id' => $connectionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Phase 3 Enhancement: Initialize communication streams with better error handling
+     */
+    private function initializeStreams(string $connectionId, SymfonyProcess $process): void
+    {
+        try {
+            $stdin = $process->getInput();
+            $stdout = $process->getOutput();
+
+            if (! $stdin || ! $stdout) {
+                throw new \Exception('Failed to get process streams');
+            }
+
+            $this->connectionStreams[$connectionId] = [
+                'stdin' => $stdin,
+                'stdout' => $stdout,
+                'process' => $process,
+                'buffer' => '',
+                'last_activity' => time(),
+            ];
+
+            Log::debug('MCP streams initialized', [
+                'connection_id' => $connectionId,
+                'has_stdin' => ! empty($stdin),
+                'has_stdout' => ! empty($stdout),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to initialize MCP streams', [
+                'connection_id' => $connectionId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Phase 3 Enhancement: Store server capabilities for advanced feature support
+     */
+    private function storeServerCapabilities(string $connectionId, array $capabilities): void
+    {
+        try {
+            $this->connectionStreams[$connectionId]['server_capabilities'] = $capabilities;
+
+            Log::info('Server capabilities stored', [
+                'connection_id' => $connectionId,
+                'tools_supported' => isset($capabilities['tools']),
+                'resources_supported' => isset($capabilities['resources']),
+                'prompts_supported' => isset($capabilities['prompts']),
+                'logging_supported' => isset($capabilities['logging']),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::warning('Failed to store server capabilities', [
+                'connection_id' => $connectionId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Phase 3 Enhancement: Send notification (no response expected)
+     */
+    private function sendNotification(string $connectionId, string $method, array $params = []): void
+    {
+        try {
+            $notification = [
+                'jsonrpc' => '2.0',
+                'method' => $method,
+                'params' => $params,
+            ];
+
+            $this->writeToProcess($connectionId, $notification);
+
+            Log::debug('Notification sent', [
+                'connection_id' => $connectionId,
+                'method' => $method,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::warning('Failed to send notification', [
+                'connection_id' => $connectionId,
+                'method' => $method,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Phase 3 Enhancement: Write JSON-RPC message to process with better error handling
+     */
+    private function writeToProcess(string $connectionId, array $message): void
+    {
+        if (! isset($this->connectionStreams[$connectionId])) {
+            throw new \Exception('Connection streams not available');
+        }
+
+        $process = $this->connectionStreams[$connectionId]['process'];
+
+        if (! $process->isRunning()) {
+            throw new \Exception('Process is not running');
+        }
+
+        $json = json_encode($message)."\n";
+
+        try {
+            $process->setInput($json);
+            $this->connectionStreams[$connectionId]['last_activity'] = time();
+
+            Log::debug('Message written to process', [
+                'connection_id' => $connectionId,
+                'method' => $message['method'] ?? 'unknown',
+                'id' => $message['id'] ?? null,
+                'message_size' => strlen($json),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to write to process', [
+                'connection_id' => $connectionId,
+                'error' => $e->getMessage(),
+                'process_running' => $process->isRunning(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Phase 3 Enhancement: Get server capabilities for a connection
+     */
+    public function getServerCapabilities(string $connectionId): array
+    {
+        return $this->connectionStreams[$connectionId]['server_capabilities'] ?? [];
+    }
+
+    /**
+     * Phase 3 Enhancement: Check if specific capability is supported
+     */
+    public function hasCapability(string $connectionId, string $capability): bool
+    {
+        $capabilities = $this->getServerCapabilities($connectionId);
+
+        return isset($capabilities[$capability]);
+    }
+
+    /**
+     * Phase 3 Enhancement: Enhanced error recovery and reconnection
+     */
+    public function attemptReconnection(string $connectionId): bool
+    {
+        try {
+            Log::info('Attempting MCP reconnection', ['connection_id' => $connectionId]);
+
+            // Stop existing connection
+            $this->stopConnection($connectionId);
+
+            // Wait a moment before reconnecting
+            usleep(1000000); // 1 second
+
+            // Get connection object and restart
+            if (isset($this->activeConnections[$connectionId])) {
+                $connection = $this->activeConnections[$connectionId];
+                unset($this->activeConnections[$connectionId]);
+
+                return $this->startConnection($connection);
+            }
+
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error('Reconnection failed', [
                 'connection_id' => $connectionId,
                 'error' => $e->getMessage(),
             ]);

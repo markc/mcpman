@@ -16,25 +16,56 @@ class ResourceManager
 
     private const MAX_CACHE_SIZE_MB = 100; // Maximum cache size per resource
 
+    private const SUPPORTED_RESOURCE_TYPES = [
+        'text/plain',
+        'text/markdown',
+        'application/json',
+        'text/html',
+        'text/csv',
+        'application/xml',
+        'text/yaml',
+        'image/png',
+        'image/jpeg',
+        'application/pdf',
+    ];
+
+    private array $resourceSubscriptions = [];
+
     /**
-     * Discover resources from all active MCP connections
+     * Advanced Feature: Discover resources from all active MCP connections with enhanced capabilities
      */
     public function discoverAllResources(User $user): Collection
     {
         $discoveredResources = collect();
         $connections = McpConnection::where('status', 'active')->get();
 
+        Log::info('Starting advanced resource discovery', [
+            'user_id' => $user->id,
+            'connection_count' => $connections->count(),
+            'supported_types' => self::SUPPORTED_RESOURCE_TYPES,
+        ]);
+
         foreach ($connections as $connection) {
             try {
                 $connectionResources = $this->discoverResourcesFromConnection($connection, $user);
                 $discoveredResources = $discoveredResources->merge($connectionResources);
+
+                // Advanced Feature: Subscribe to resource changes if supported
+                $this->subscribeToResourceChanges($connection, $user);
+
             } catch (\Exception $e) {
                 Log::error("Failed to discover resources from connection {$connection->id}", [
                     'error' => $e->getMessage(),
                     'connection' => $connection->name,
+                    'user_id' => $user->id,
                 ]);
             }
         }
+
+        Log::info('Resource discovery completed', [
+            'total_resources' => $discoveredResources->count(),
+            'user_id' => $user->id,
+        ]);
 
         return $discoveredResources;
     }
@@ -588,5 +619,345 @@ class ResourceManager
         Cache::forget('resource_statistics');
 
         Log::info('All resource cache cleared');
+    }
+
+    /**
+     * Advanced Feature: Subscribe to resource changes if MCP server supports it
+     */
+    private function subscribeToResourceChanges(McpConnection $connection, User $user): void
+    {
+        try {
+            // Check if the connection supports resource subscriptions
+            $persistentManager = app(PersistentMcpManager::class);
+
+            if (! $persistentManager->hasCapability((string) $connection->id, 'resources')) {
+                return;
+            }
+
+            $capabilities = $persistentManager->getServerCapabilities((string) $connection->id);
+            $supportsSubscription = $capabilities['resources']['subscribe'] ?? false;
+
+            if (! $supportsSubscription) {
+                Log::debug('Resource subscription not supported', [
+                    'connection_id' => $connection->id,
+                    'connection_name' => $connection->name,
+                ]);
+
+                return;
+            }
+
+            // Subscribe to resource list changes
+            $subscriptionRequest = [
+                'jsonrpc' => '2.0',
+                'id' => uniqid(),
+                'method' => 'resources/subscribe',
+                'params' => [
+                    'uri' => '*', // Subscribe to all resources
+                ],
+            ];
+
+            $response = $persistentManager->sendMessage((string) $connection->id, $subscriptionRequest);
+
+            if (isset($response['result'])) {
+                $this->resourceSubscriptions[$connection->id] = [
+                    'user_id' => $user->id,
+                    'subscribed_at' => now(),
+                    'subscription_id' => $response['result']['subscriptionId'] ?? null,
+                ];
+
+                Log::info('Successfully subscribed to resource changes', [
+                    'connection_id' => $connection->id,
+                    'user_id' => $user->id,
+                    'subscription_id' => $response['result']['subscriptionId'] ?? 'unknown',
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::warning('Failed to subscribe to resource changes', [
+                'connection_id' => $connection->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Advanced Feature: Read resource with enhanced content type handling
+     */
+    public function readResourceWithEnhancedHandling(string $uri, McpConnection $connection, User $user): array
+    {
+        try {
+            $persistentManager = app(PersistentMcpManager::class);
+
+            $readRequest = [
+                'jsonrpc' => '2.0',
+                'id' => uniqid(),
+                'method' => 'resources/read',
+                'params' => [
+                    'uri' => $uri,
+                ],
+            ];
+
+            Log::info('Reading resource with enhanced handling', [
+                'uri' => $uri,
+                'connection_id' => $connection->id,
+                'user_id' => $user->id,
+            ]);
+
+            $response = $persistentManager->sendMessage((string) $connection->id, $readRequest);
+
+            if (! isset($response['result']['contents'])) {
+                throw new \Exception('Invalid resource response format');
+            }
+
+            $contents = $response['result']['contents'];
+            $processedContents = [];
+
+            foreach ($contents as $content) {
+                $mimeType = $content['mimeType'] ?? 'text/plain';
+
+                // Enhanced content type handling
+                $processedContent = $this->processContentByMimeType($content, $mimeType);
+                $processedContents[] = $processedContent;
+            }
+
+            return [
+                'uri' => $uri,
+                'contents' => $processedContents,
+                'metadata' => [
+                    'read_at' => now()->toISOString(),
+                    'user_id' => $user->id,
+                    'connection_id' => $connection->id,
+                    'content_count' => count($processedContents),
+                ],
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Failed to read resource with enhanced handling', [
+                'uri' => $uri,
+                'connection_id' => $connection->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Advanced Feature: Process content based on MIME type
+     */
+    private function processContentByMimeType(array $content, string $mimeType): array
+    {
+        $processedContent = $content;
+        $text = $content['text'] ?? '';
+
+        try {
+            switch ($mimeType) {
+                case 'application/json':
+                    $decoded = json_decode($text, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $processedContent['parsed_data'] = $decoded;
+                        $processedContent['is_valid_json'] = true;
+                    } else {
+                        $processedContent['json_error'] = json_last_error_msg();
+                        $processedContent['is_valid_json'] = false;
+                    }
+                    break;
+
+                case 'text/csv':
+                    $lines = str_getcsv($text, "\n");
+                    $csvData = array_map('str_getcsv', $lines);
+                    $processedContent['parsed_csv'] = $csvData;
+                    $processedContent['row_count'] = count($csvData);
+                    break;
+
+                case 'text/markdown':
+                    $processedContent['word_count'] = str_word_count($text);
+                    $processedContent['heading_count'] = substr_count($text, '#');
+                    break;
+
+                case 'application/xml':
+                case 'text/xml':
+                    libxml_use_internal_errors(true);
+                    $xml = simplexml_load_string($text);
+                    if ($xml !== false) {
+                        $processedContent['is_valid_xml'] = true;
+                        $processedContent['xml_structure'] = $this->summarizeXmlStructure($xml);
+                    } else {
+                        $processedContent['is_valid_xml'] = false;
+                        $processedContent['xml_errors'] = libxml_get_errors();
+                    }
+                    break;
+
+                case 'text/yaml':
+                case 'application/yaml':
+                    try {
+                        $yamlData = yaml_parse($text);
+                        $processedContent['parsed_yaml'] = $yamlData;
+                        $processedContent['is_valid_yaml'] = true;
+                    } catch (\Exception $e) {
+                        $processedContent['is_valid_yaml'] = false;
+                        $processedContent['yaml_error'] = $e->getMessage();
+                    }
+                    break;
+
+                default:
+                    $processedContent['character_count'] = mb_strlen($text);
+                    $processedContent['line_count'] = substr_count($text, "\n") + 1;
+                    break;
+            }
+
+            // Add common metadata
+            $processedContent['mime_type'] = $mimeType;
+            $processedContent['is_supported_type'] = in_array($mimeType, self::SUPPORTED_RESOURCE_TYPES);
+            $processedContent['processed_at'] = now()->toISOString();
+
+        } catch (\Exception $e) {
+            Log::warning('Failed to process content by MIME type', [
+                'mime_type' => $mimeType,
+                'error' => $e->getMessage(),
+            ]);
+
+            $processedContent['processing_error'] = $e->getMessage();
+        }
+
+        return $processedContent;
+    }
+
+    /**
+     * Advanced Feature: Summarize XML structure for large documents
+     */
+    private function summarizeXmlStructure(\SimpleXMLElement $xml): array
+    {
+        $summary = [
+            'root_element' => $xml->getName(),
+            'namespaces' => $xml->getNamespaces(true),
+            'child_elements' => [],
+            'attribute_count' => 0,
+        ];
+
+        // Count attributes
+        foreach ($xml->attributes() as $attr) {
+            $summary['attribute_count']++;
+        }
+
+        // Get child element names (limited to prevent memory issues)
+        $childNames = [];
+        $count = 0;
+        foreach ($xml->children() as $child) {
+            $childNames[] = $child->getName();
+            $count++;
+            if ($count > 100) { // Limit to first 100 children
+                $summary['truncated'] = true;
+                break;
+            }
+        }
+
+        $summary['child_elements'] = array_unique($childNames);
+        $summary['total_children'] = $count;
+
+        return $summary;
+    }
+
+    /**
+     * Advanced Feature: Get supported resource types
+     */
+    public function getSupportedResourceTypes(): array
+    {
+        return self::SUPPORTED_RESOURCE_TYPES;
+    }
+
+    /**
+     * Advanced Feature: Validate resource URI format
+     */
+    public function validateResourceUri(string $uri): array
+    {
+        $validation = [
+            'is_valid' => false,
+            'scheme' => null,
+            'host' => null,
+            'path' => null,
+            'errors' => [],
+        ];
+
+        // Parse the URI
+        $parsed = parse_url($uri);
+
+        if ($parsed === false) {
+            $validation['errors'][] = 'Invalid URI format';
+
+            return $validation;
+        }
+
+        $validation['scheme'] = $parsed['scheme'] ?? null;
+        $validation['host'] = $parsed['host'] ?? null;
+        $validation['path'] = $parsed['path'] ?? null;
+
+        // Validate scheme
+        $validSchemes = ['file', 'http', 'https', 'mcp', 'data'];
+        if (! in_array($validation['scheme'], $validSchemes)) {
+            $validation['errors'][] = "Unsupported URI scheme: {$validation['scheme']}";
+        }
+
+        // Validate path
+        if (empty($validation['path'])) {
+            $validation['errors'][] = 'URI path is required';
+        }
+
+        $validation['is_valid'] = empty($validation['errors']);
+
+        return $validation;
+    }
+
+    /**
+     * Advanced Feature: Get resource analytics and usage statistics
+     */
+    public function getResourceAnalytics(?User $user = null): array
+    {
+        $cacheKey = 'advanced_resource_analytics'.($user ? "_user_{$user->id}" : '');
+
+        return Cache::remember($cacheKey, 300, function () use ($user) { // 5 minute cache
+            $query = Resource::query();
+
+            if ($user) {
+                $query->where('user_id', $user->id);
+            }
+
+            $resources = $query->get();
+
+            $analytics = [
+                'total_resources' => $resources->count(),
+                'by_type' => $resources->groupBy('resource_type')->map->count(),
+                'by_status' => $resources->groupBy('status')->map->count(),
+                'by_connection' => $resources->groupBy('connection_id')->map->count(),
+                'cache_statistics' => [
+                    'cached_resources' => $resources->where('is_cached', true)->count(),
+                    'cache_hit_rate' => $this->calculateCacheHitRate($resources),
+                ],
+                'performance_metrics' => [
+                    'average_size' => $resources->avg('content_size') ?? 0,
+                    'largest_resource' => $resources->max('content_size') ?? 0,
+                    'smallest_resource' => $resources->min('content_size') ?? 0,
+                ],
+                'recent_activity' => [
+                    'created_today' => $resources->where('created_at', '>=', now()->startOfDay())->count(),
+                    'updated_today' => $resources->where('updated_at', '>=', now()->startOfDay())->count(),
+                    'accessed_today' => $resources->where('last_accessed_at', '>=', now()->startOfDay())->count(),
+                ],
+                'generated_at' => now()->toISOString(),
+            ];
+
+            return $analytics;
+        });
+    }
+
+    /**
+     * Calculate cache hit rate for resources
+     */
+    private function calculateCacheHitRate(Collection $resources): float
+    {
+        $totalAccess = $resources->sum('access_count');
+        $cacheHits = $resources->sum('cache_hits');
+
+        return $totalAccess > 0 ? round(($cacheHits / $totalAccess) * 100, 2) : 0.0;
     }
 }

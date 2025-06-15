@@ -362,36 +362,68 @@ class McpClient
         }
 
         try {
-            // Use claude -p "prompt" for direct execution
+            // Phase 1 Enhancement: Check authentication first
+            if (config('mcp.claude.config_check', true)) {
+                $authResult = $this->checkClaudeAuthentication();
+                if (! $authResult['success']) {
+                    Log::warning('Claude authentication issue detected', $authResult);
+
+                    return $this->getMockResponse($request);
+                }
+            }
+
+            // Phase 1 Enhancement: Use enhanced command with timeout from config
+            $timeout = config('mcp.direct_timeout', 45);
             $command = ['claude', '-p', $userPrompt];
 
-            Log::info('Executing direct Claude command', ['prompt' => $userPrompt]);
+            Log::info('Executing direct Claude command with enhanced timeout', [
+                'prompt' => substr($userPrompt, 0, 100).(strlen($userPrompt) > 100 ? '...' : ''),
+                'timeout' => $timeout,
+                'attempt_number' => 1,
+            ]);
 
-            $result = Process::timeout(30)
+            $startTime = microtime(true);
+
+            $result = Process::timeout($timeout)
+                ->env(['MCP_TIMEOUT' => config('mcp.timeout', 30000)])
                 ->run($command);
+
+            $duration = round((microtime(true) - $startTime) * 1000, 2);
 
             if (! $result->successful()) {
                 Log::warning('Direct Claude execution failed', [
                     'exit_code' => $result->exitCode(),
                     'error' => $result->errorOutput(),
                     'output' => $result->output(),
+                    'duration_ms' => $duration,
                 ]);
 
-                // Fall back to mock response
+                // Phase 1 Enhancement: Try retry logic
+                if (config('mcp.max_retries', 3) > 1) {
+                    return $this->retryDirectClaudeCommand($request, 1);
+                }
+
                 return $this->getMockResponse($request);
             }
 
             $output = trim($result->output());
 
             if (empty($output)) {
-                Log::warning('No output from direct Claude execution');
+                Log::warning('No output from direct Claude execution', ['duration_ms' => $duration]);
 
                 return $this->getMockResponse($request);
             }
 
-            Log::info('Direct Claude execution successful', ['response_length' => strlen($output)]);
+            Log::info('Direct Claude execution successful', [
+                'response_length' => strlen($output),
+                'duration_ms' => $duration,
+            ]);
 
-            // Return the response in MCP format
+            // Phase 1 Enhancement: Cache successful responses
+            if (config('mcp.cache_responses', true)) {
+                $this->cacheResponse($userPrompt, $output);
+            }
+
             return [
                 'result' => [
                     'content' => $output,
@@ -401,10 +433,9 @@ class McpClient
         } catch (\Exception $e) {
             Log::info('Direct Claude execution failed, using fallback', [
                 'error' => $e->getMessage(),
-                'prompt' => $userPrompt,
+                'prompt' => substr($userPrompt, 0, 100).(strlen($userPrompt) > 100 ? '...' : ''),
             ]);
 
-            // Fall back to mock response
             return $this->getMockResponse($request);
         }
     }
@@ -522,13 +553,143 @@ class McpClient
         return "I received your message: '{$userMessage}'. This is a mock response from the MCP fallback system. The real Claude Code MCP server is being attempted but timing out after 5 seconds. Your message was processed successfully though!";
     }
 
-    public function disconnect(): void
+    /**
+     * Phase 1 Enhancement: Check Claude authentication status
+     */
+    private function checkClaudeAuthentication(): array
     {
         try {
-            $this->connection->disconnect();
-            Log::info('MCP connection closed', ['connection' => $this->connection->name]);
+            $timeout = config('mcp.claude.auth_timeout', 10);
+            $command = ['claude', 'config', 'get'];
+
+            $result = Process::timeout($timeout)->run($command);
+
+            if (! $result->successful()) {
+                return [
+                    'success' => false,
+                    'error' => 'Authentication check failed',
+                    'exit_code' => $result->exitCode(),
+                    'output' => $result->errorOutput(),
+                ];
+            }
+
+            return ['success' => true, 'output' => $result->output()];
+
         } catch (\Exception $e) {
-            Log::error('Error disconnecting MCP', ['connection' => $this->connection->name, 'error' => $e->getMessage()]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Phase 1 Enhancement: Retry logic with exponential backoff
+     */
+    private function retryDirectClaudeCommand(array $request, int $attempt): array
+    {
+        $maxRetries = config('mcp.max_retries', 3);
+
+        if ($attempt >= $maxRetries) {
+            Log::warning('Maximum retries reached for Claude command');
+
+            return $this->getMockResponse($request);
+        }
+
+        $delay = config('mcp.claude.retry_delay', 1000); // milliseconds
+        if (config('mcp.claude.exponential_backoff', true)) {
+            $delay = $delay * pow(2, $attempt - 1);
+        }
+
+        Log::info('Retrying Claude command', [
+            'attempt' => $attempt + 1,
+            'delay_ms' => $delay,
+            'max_retries' => $maxRetries,
+        ]);
+
+        usleep($delay * 1000); // Convert to microseconds
+
+        $params = $request['params'] ?? [];
+        $messages = $params['messages'] ?? [];
+        $lastMessage = end($messages);
+        $userPrompt = $lastMessage['content'] ?? '';
+
+        try {
+            $timeout = config('mcp.direct_timeout', 45);
+            $command = ['claude', '-p', $userPrompt];
+
+            $startTime = microtime(true);
+            $result = Process::timeout($timeout)->run($command);
+            $duration = round((microtime(true) - $startTime) * 1000, 2);
+
+            if (! $result->successful()) {
+                Log::warning('Retry attempt failed', [
+                    'attempt' => $attempt + 1,
+                    'duration_ms' => $duration,
+                    'exit_code' => $result->exitCode(),
+                ]);
+
+                return $this->retryDirectClaudeCommand($request, $attempt + 1);
+            }
+
+            $output = trim($result->output());
+            if (empty($output)) {
+                return $this->retryDirectClaudeCommand($request, $attempt + 1);
+            }
+
+            Log::info('Retry successful', [
+                'attempt' => $attempt + 1,
+                'duration_ms' => $duration,
+            ]);
+
+            return [
+                'result' => [
+                    'content' => $output,
+                ],
+            ];
+
+        } catch (\Exception $e) {
+            Log::warning('Retry attempt exception', [
+                'attempt' => $attempt + 1,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->retryDirectClaudeCommand($request, $attempt + 1);
+        }
+    }
+
+    /**
+     * Phase 1 Enhancement: Cache responses to reduce API calls
+     */
+    private function cacheResponse(string $prompt, string $response): void
+    {
+        try {
+            $cacheKey = config('mcp.health_check.cache_key', 'mcp_response_').md5($prompt);
+            $ttl = config('mcp.health_check.cache_ttl', 300);
+
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $response, $ttl);
+
+        } catch (\Exception $e) {
+            Log::debug('Failed to cache response', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Phase 1 Enhancement: Check for cached responses
+     */
+    private function getCachedResponse(string $prompt): ?string
+    {
+        if (! config('mcp.cache_responses', true)) {
+            return null;
+        }
+
+        try {
+            $cacheKey = config('mcp.health_check.cache_key', 'mcp_response_').md5($prompt);
+
+            return \Illuminate\Support\Facades\Cache::get($cacheKey);
+
+        } catch (\Exception $e) {
+            return null;
         }
     }
 
@@ -551,8 +712,15 @@ class McpClient
 
     public function disconnect(): void
     {
-        if ($this->usePersistentConnection) {
-            $this->manager->stopConnection((string) $this->connection->id);
+        try {
+            if ($this->usePersistentConnection) {
+                $this->manager->stopConnection((string) $this->connection->id);
+            } else {
+                $this->connection->disconnect();
+            }
+            Log::info('MCP connection closed', ['connection' => $this->connection->name]);
+        } catch (\Exception $e) {
+            Log::error('Error disconnecting MCP', ['connection' => $this->connection->name, 'error' => $e->getMessage()]);
         }
     }
 
