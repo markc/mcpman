@@ -59,5 +59,5 @@ class SystemComponentsWidget extends BaseWidget
         }
     }
 
-    protected ?string $pollingInterval = '60s'; // Refresh every 60 seconds
+    // Polling handled by parent page
 }

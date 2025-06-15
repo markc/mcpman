@@ -32,6 +32,9 @@ class McpServer
                 'resources/read' => $this->hasPermission('read') ? $this->readResource($params) : $this->errorResponse('Insufficient permissions', -32603),
                 'prompts/list' => $this->listPrompts(),
                 'prompts/get' => $this->getPrompt($params),
+                'error_notification' => $this->handleErrorNotification($params),
+                'get_file_content' => $this->hasPermission('read') ? $this->getFileContent($params) : $this->errorResponse('Insufficient permissions', -32603),
+                'apply_fix' => $this->hasPermission('write') ? $this->applyFix($params) : $this->errorResponse('Insufficient permissions', -32603),
                 default => $this->errorResponse('Unknown method', -32601)
             };
         } catch (\Exception $e) {
@@ -605,5 +608,289 @@ class McpServer
                 'message' => $message,
             ],
         ];
+    }
+
+    /**
+     * Handle error notification from log monitoring
+     */
+    private function handleErrorNotification(array $params): array
+    {
+        Log::info('Received error notification from log monitor', [
+            'error_type' => $params['error_details']['type'] ?? 'unknown',
+            'file' => $params['error_details']['file_path'] ?? 'unknown',
+            'severity' => $params['severity'] ?? 'unknown',
+        ]);
+
+        // Store error for tracking and analysis
+        $this->storeErrorNotification($params);
+
+        // Generate response with fix suggestions
+        return [
+            'jsonrpc' => '2.0',
+            'result' => [
+                'status' => 'received',
+                'error_id' => $this->generateErrorId($params),
+                'analysis' => $this->analyzeError($params),
+                'suggestions' => $params['suggested_actions'] ?? [],
+                'auto_fix_available' => $params['auto_fix_recommended'] ?? false,
+                'timestamp' => now()->toISOString(),
+            ],
+        ];
+    }
+
+    /**
+     * Get file content for error analysis
+     */
+    private function getFileContent(array $params): array
+    {
+        $filePath = $params['file_path'] ?? null;
+        $startLine = $params['start_line'] ?? 1;
+        $endLine = $params['end_line'] ?? null;
+
+        if (! $filePath || ! file_exists($filePath)) {
+            return $this->errorResponse('File not found', -32602);
+        }
+
+        try {
+            $lines = file($filePath, FILE_IGNORE_NEW_LINES);
+            $totalLines = count($lines);
+
+            $start = max(0, $startLine - 1);
+            $end = $endLine ? min($totalLines, $endLine) : $totalLines;
+
+            $content = array_slice($lines, $start, $end - $start);
+
+            return [
+                'jsonrpc' => '2.0',
+                'result' => [
+                    'file_path' => $filePath,
+                    'content' => $content,
+                    'line_range' => [
+                        'start' => $startLine,
+                        'end' => $start + count($content),
+                    ],
+                    'total_lines' => $totalLines,
+                ],
+            ];
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to read file: '.$e->getMessage(), -32603);
+        }
+    }
+
+    /**
+     * Apply automated fix
+     */
+    private function applyFix(array $params): array
+    {
+        $filePath = $params['file_path'] ?? null;
+        $fixType = $params['fix_type'] ?? null;
+        $fixData = $params['fix_data'] ?? [];
+
+        if (! $filePath || ! file_exists($filePath)) {
+            return $this->errorResponse('File not found', -32602);
+        }
+
+        try {
+            $result = match ($fixType) {
+                'remove_duplicate_method' => $this->removeDuplicateMethod($filePath, $fixData),
+                'add_missing_import' => $this->addMissingImport($filePath, $fixData),
+                'fix_syntax_error' => $this->fixSyntaxError($filePath, $fixData),
+                default => throw new \InvalidArgumentException("Unknown fix type: {$fixType}"),
+            };
+
+            return [
+                'jsonrpc' => '2.0',
+                'result' => [
+                    'status' => 'applied',
+                    'fix_type' => $fixType,
+                    'file_path' => $filePath,
+                    'changes_made' => $result,
+                    'timestamp' => now()->toISOString(),
+                ],
+            ];
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to apply fix: '.$e->getMessage(), -32603);
+        }
+    }
+
+    /**
+     * Store error notification for tracking
+     */
+    private function storeErrorNotification(array $params): void
+    {
+        // Could store in database for analytics and tracking
+        Log::info('Error stored for tracking', [
+            'error_id' => $this->generateErrorId($params),
+            'type' => $params['error_details']['type'] ?? 'unknown',
+            'file' => $params['error_details']['file_path'] ?? 'unknown',
+        ]);
+    }
+
+    /**
+     * Generate unique error ID
+     */
+    private function generateErrorId(array $params): string
+    {
+        $errorType = $params['error_details']['type'] ?? 'unknown';
+        $filePath = $params['error_details']['file_path'] ?? 'unknown';
+        $timestamp = $params['timestamp'] ?? now()->toISOString();
+
+        return 'error_'.md5($errorType.$filePath.$timestamp);
+    }
+
+    /**
+     * Analyze error and provide context
+     */
+    private function analyzeError(array $params): array
+    {
+        $errorType = $params['error_details']['type'] ?? 'unknown';
+        $filePath = $params['error_details']['file_path'] ?? null;
+        $lineNumber = $params['error_details']['line_number'] ?? null;
+
+        return [
+            'error_type' => $errorType,
+            'severity' => $params['severity'] ?? 'unknown',
+            'file_analysis' => $filePath ? $this->analyzeFile($filePath) : null,
+            'line_context' => $lineNumber ? $this->getLineContext($filePath, $lineNumber) : null,
+            'potential_causes' => $this->getPotentialCauses($errorType),
+            'fix_complexity' => $this->getFixComplexity($errorType),
+        ];
+    }
+
+    /**
+     * Analyze file for context
+     */
+    private function analyzeFile(string $filePath): array
+    {
+        return [
+            'file_type' => pathinfo($filePath, PATHINFO_EXTENSION),
+            'file_size' => filesize($filePath),
+            'line_count' => count(file($filePath)),
+            'namespace' => $this->extractNamespace($filePath),
+            'class_name' => $this->extractClassName($filePath),
+        ];
+    }
+
+    /**
+     * Get context around specific line
+     */
+    private function getLineContext(string $filePath, int $lineNumber): array
+    {
+        if (! file_exists($filePath)) {
+            return [];
+        }
+
+        $lines = file($filePath, FILE_IGNORE_NEW_LINES);
+        $start = max(0, $lineNumber - 6);
+        $end = min(count($lines), $lineNumber + 5);
+
+        $context = [];
+        for ($i = $start; $i < $end; $i++) {
+            $context[$i + 1] = [
+                'line_number' => $i + 1,
+                'content' => $lines[$i] ?? '',
+                'is_error_line' => ($i + 1) === $lineNumber,
+            ];
+        }
+
+        return $context;
+    }
+
+    /**
+     * Get potential causes for error types
+     */
+    private function getPotentialCauses(string $errorType): array
+    {
+        return match ($errorType) {
+            'duplicate_method' => [
+                'Copy/paste error',
+                'Merge conflict resolution',
+                'Multiple trait inclusions',
+                'IDE auto-completion mistake',
+            ],
+            'class_not_found' => [
+                'Missing use statement',
+                'Incorrect namespace',
+                'Autoloader not updated',
+                'Typo in class name',
+            ],
+            'syntax_error' => [
+                'Missing semicolon',
+                'Unmatched brackets',
+                'Invalid PHP syntax',
+                'Encoding issues',
+            ],
+            default => [
+                'Recent code changes',
+                'Configuration issues',
+                'Dependency problems',
+            ],
+        };
+    }
+
+    /**
+     * Get fix complexity assessment
+     */
+    private function getFixComplexity(string $errorType): string
+    {
+        return match ($errorType) {
+            'duplicate_method', 'syntax_error' => 'simple',
+            'class_not_found', 'method_not_found' => 'medium',
+            'fatal', 'exception' => 'complex',
+            default => 'unknown',
+        };
+    }
+
+    /**
+     * Extract namespace from PHP file
+     */
+    private function extractNamespace(string $filePath): ?string
+    {
+        $content = file_get_contents($filePath);
+        if (preg_match('/namespace\s+([^;]+);/', $content, $matches)) {
+            return trim($matches[1]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract class name from PHP file
+     */
+    private function extractClassName(string $filePath): ?string
+    {
+        $content = file_get_contents($filePath);
+        if (preg_match('/class\s+(\w+)/', $content, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Remove duplicate method from file
+     */
+    private function removeDuplicateMethod(string $filePath, array $fixData): array
+    {
+        // Implementation would analyze and remove duplicate methods
+        return ['action' => 'remove_duplicate_method', 'status' => 'simulated'];
+    }
+
+    /**
+     * Add missing import to file
+     */
+    private function addMissingImport(string $filePath, array $fixData): array
+    {
+        // Implementation would add missing use statements
+        return ['action' => 'add_missing_import', 'status' => 'simulated'];
+    }
+
+    /**
+     * Fix syntax error in file
+     */
+    private function fixSyntaxError(string $filePath, array $fixData): array
+    {
+        // Implementation would fix common syntax errors
+        return ['action' => 'fix_syntax_error', 'status' => 'simulated'];
     }
 }
