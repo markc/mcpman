@@ -16,7 +16,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -33,9 +33,10 @@ class DatasetResource extends Resource
     {
         return $schema
             ->components([
-                Section::make('Dataset Information')
-                    ->description('Basic dataset details and identification')
-                    ->schema([
+                Placeholder::make('dataset_info_header')
+                    ->label('Dataset Information')
+                    ->content('Basic dataset details and identification')
+                    ->columnSpanFull(),
                         TextInput::make('name')
                             ->label('Dataset Name')
                             ->required()
@@ -56,13 +57,12 @@ class DatasetResource extends Resource
                             ->helperText('Detailed description of the dataset purpose and contents')
                             ->rows(3)
                             ->columnSpanFull(),
-                    ])
-                    ->columns(2)
-                    ->columnSpanFull(),
+                    ]),
 
-                Section::make('Dataset Configuration')
-                    ->description('Data format and processing settings')
-                    ->schema([
+                Placeholder::make('dataset_config_header')
+                    ->label('Dataset Configuration')
+                    ->content('Data format and processing settings')
+                    ->columnSpanFull(),
                         Select::make('type')
                             ->label('Data Format')
                             ->helperText('Select the primary data format for this dataset')
@@ -86,13 +86,12 @@ class DatasetResource extends Resource
                             ])
                             ->required()
                             ->default('active'),
-                    ])
-                    ->columns(2)
-                    ->columnSpanFull(),
+                    ]),
 
-                Section::make('Schema & Metadata')
-                    ->description('Data structure definition and additional properties')
-                    ->schema([
+                Placeholder::make('schema_metadata_header')
+                    ->label('Schema & Metadata')
+                    ->content('Data structure and custom properties')
+                    ->columnSpanFull(),
                         KeyValue::make('schema')
                             ->label('Schema Definition')
                             ->helperText('Define the structure and data types for your dataset')

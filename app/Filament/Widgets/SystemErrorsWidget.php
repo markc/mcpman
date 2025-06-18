@@ -7,9 +7,9 @@ use Filament\Widgets\Widget;
 
 class SystemErrorsWidget extends Widget
 {
-    protected string $view = 'filament.widgets.system-errors-widget';
-
     protected static ?int $sort = 4;
+
+    protected string $view = 'filament.widgets.system-errors-widget';
 
     // Polling handled by parent page
 

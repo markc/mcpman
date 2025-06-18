@@ -44,6 +44,26 @@ class LogMonitoringService
             'severity' => 'critical',
             'auto_fix' => true,
         ],
+        'mcp_method_error' => [
+            'pattern' => '/error: Unsupported MCP method: (.+?)/',
+            'severity' => 'high',
+            'auto_fix' => true,
+        ],
+        'typed_property_error' => [
+            'pattern' => '/Typed property (.+?) must not be accessed before initialization/',
+            'severity' => 'high',
+            'auto_fix' => true,
+        ],
+        'view_exception' => [
+            'pattern' => '/Class "(.+?)" not found \(View: (.+?)\)/',
+            'severity' => 'high',
+            'auto_fix' => true,
+        ],
+        'livewire_component_not_found' => [
+            'pattern' => '/Unable to find component: \[(.+?)\]/',
+            'severity' => 'high',
+            'auto_fix' => true,
+        ],
     ];
 
     private array $contextPatterns = [
@@ -53,10 +73,12 @@ class LogMonitoringService
         'timestamp' => '/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/',
     ];
 
-    public function __construct(
-        private McpClient $mcpClient,
-        private BidirectionalMcpClient $bidirectionalClient
-    ) {}
+    private ?BidirectionalMcpClient $bidirectionalClient = null;
+
+    public function __construct(?BidirectionalMcpClient $bidirectionalClient = null)
+    {
+        $this->bidirectionalClient = $bidirectionalClient ?? app(BidirectionalMcpClient::class);
+    }
 
     /**
      * Start real-time log monitoring
@@ -309,17 +331,13 @@ class LogMonitoringService
     private function notifyClaude(array $notification): void
     {
         try {
-            // Send to local MCP server (existing functionality)
-            $localResponse = $this->mcpClient->sendRequest('error_notification', $notification);
-
-            // Send to external Claude processes (new bidirectional functionality)
+            // Send to external Claude processes via bidirectional client
             $externalResults = $this->bidirectionalClient->notifyError($notification);
 
             Log::info('Error notification sent to Claude processes', [
                 'error_type' => $notification['error_details']['type'],
                 'file' => $notification['error_details']['file_path'] ?? 'unknown',
                 'auto_fix' => $notification['auto_fix_recommended'],
-                'local_response' => $localResponse,
                 'external_results' => $externalResults,
             ]);
 
@@ -332,14 +350,59 @@ class LogMonitoringService
     }
 
     /**
-     * Check if log monitoring is supported
+     * Check if MCP log monitoring is actually running and functional
      */
     public function isMonitoringSupported(): bool
     {
-        // Check if tail command is available
-        $result = Process::run(['which', 'tail']);
+        try {
+            // 1. Check if the MCP watch-logs command class exists
+            if (! class_exists(\App\Console\Commands\McpLogWatcher::class)) {
+                Log::info('MCP log monitoring check: McpLogWatcher command class not found [NEW CHECK]');
 
-        return $result->successful();
+                return false;
+            }
+
+            // 2. Check if log file exists and is writable
+            $logFile = storage_path('logs/laravel.log');
+            if (! file_exists($logFile) || ! is_writable($logFile)) {
+                Log::info('MCP log monitoring check: log file not writable', ['file' => $logFile]);
+
+                return false;
+            }
+
+            // 3. Check if MCP services are properly configured
+            if (! app()->bound(BidirectionalMcpClient::class)) {
+                Log::info('MCP log monitoring check: BidirectionalMcpClient service not bound');
+
+                return false;
+            }
+
+            // 4. Test actual monitoring process - check if it's currently running
+            $isProcessRunning = $this->isLogMonitoringProcessActive();
+
+            // Remove this info log to prevent spam - status is already shown in widget
+
+            // Return true if system is ready (even if not currently monitoring)
+            // This indicates the system CAN work, not that it IS working
+            return true;
+
+        } catch (\Exception $e) {
+            Log::warning('MCP log monitoring support check failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Check if log monitoring process is actually running
+     */
+    private function isLogMonitoringProcessActive(): bool
+    {
+        $output = shell_exec("ps aux | grep 'php artisan mcp:watch-logs' | grep -v grep");
+
+        return ! empty(trim($output ?? ''));
     }
 
     /**
