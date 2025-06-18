@@ -15,8 +15,8 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Heroicon;
 use Filament\Support\Enums\Width;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
@@ -107,26 +107,26 @@ class ToolManagement extends Page implements HasForms
         return [
             Action::make('discoverAllTools')
                 ->label('Discover All Tools')
-                ->icon(Heroicon::OUTLINE_MAGNIFYING_GLASS)
+                ->icon(Heroicon::OutlinedMagnifyingGlass)
                 ->action('discoverAllTools')
                 ->requiresConfirmation()
                 ->modalDescription('This will scan all active MCP connections and discover available tools. This may take a few moments.'),
 
             Action::make('refreshStats')
                 ->label('Refresh Statistics')
-                ->icon(Heroicon::OUTLINE_ARROW_PATH)
+                ->icon(Heroicon::OutlinedArrowPath)
                 ->action('refreshStatistics'),
 
             Action::make('clearCache')
                 ->label('Clear Cache')
-                ->icon(Heroicon::OUTLINE_TRASH)
+                ->icon(Heroicon::OutlinedTrash)
                 ->action('clearToolCache')
                 ->requiresConfirmation()
                 ->color('danger'),
 
             Action::make('createComposition')
                 ->label('Create Tool Composition')
-                ->icon(Heroicon::OUTLINE_SQUARES_PLUS)
+                ->icon(Heroicon::OutlinedSquaresPlus)
                 ->form([
                     TextInput::make('name')
                         ->label('Composition Name')

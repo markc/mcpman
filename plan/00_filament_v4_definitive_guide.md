@@ -434,12 +434,19 @@ Slider::make('score')
 **Built-in icon system with IDE autocompletion:**
 
 ```php
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 
-// Automatic icon selection with enum
+// Automatic icon selection with enum - v4 uses PascalCase naming
 TextColumn::make('status')
-    ->icon(Heroicon::CheckCircle) // Solid variant
+    ->icon(Heroicon::CheckCircle) // Solid variant  
     ->icon(Heroicon::OutlinedCheckCircle) // Outlined variant
+
+// Navigation icons in resources
+protected static BackedEnum|string|null $navigationIcon = Heroicon::OutlinedCube;
+
+// Action icons
+Action::make('save')
+    ->icon(Heroicon::OutlinedDocument)
 ```
 
 ### JavaScript Performance Optimizations
@@ -824,7 +831,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms; // Pages only
 use Filament\Forms\Contracts\HasForms;          // Pages only
-use Filament\Support\Enums\Heroicon;            // v4 icons
+use Filament\Support\Icons\Heroicon;            // v4 icons (NOTE: Icons namespace, not Enums)
 ```
 
 ### 2. Form Organization with v4 Features
@@ -985,7 +992,7 @@ Before deploying any Filament v4 implementation:
 - [ ] All forms use `->components([...])`
 - [ ] Layout components from `Filament\Schemas\Components\*`
 - [ ] Form inputs from `Filament\Forms\Components\*`
-- [ ] Heroicons using `Filament\Support\Enums\Heroicon` enum
+- [ ] Heroicons using `Filament\Support\Icons\Heroicon` enum with PascalCase naming
 
 **For Pages Only:**
 - [ ] Pages implement `HasForms` interface

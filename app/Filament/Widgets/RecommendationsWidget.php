@@ -3,7 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Services\McpHealthCheckService;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
 
 class RecommendationsWidget extends Widget
@@ -38,11 +38,11 @@ class RecommendationsWidget extends Widget
     public function getRecommendationIcon(string $type): string
     {
         return match ($type) {
-            'success' => Heroicon::OUTLINE_CHECK_CIRCLE,
-            'info' => Heroicon::OUTLINE_INFORMATION_CIRCLE,
-            'warning' => Heroicon::OUTLINE_EXCLAMATION_TRIANGLE,
-            'error' => Heroicon::OUTLINE_X_CIRCLE,
-            default => Heroicon::OUTLINE_LIGHT_BULB,
+            'success' => Heroicon::OutlinedCheckCircle,
+            'info' => Heroicon::OutlinedInformationCircle,
+            'warning' => Heroicon::OutlinedExclamationTriangle,
+            'error' => Heroicon::OutlinedXCircle,
+            default => Heroicon::OutlinedLightBulb,
         };
     }
 }

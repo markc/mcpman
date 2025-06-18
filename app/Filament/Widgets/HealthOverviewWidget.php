@@ -3,7 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Services\McpHealthCheckService;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -25,17 +25,17 @@ class HealthOverviewWidget extends BaseWidget
 
             Stat::make('Response Time', $healthData['performance']['Response Time'] ?? 'Unknown')
                 ->description($healthData['performance']['Assessment'] ?? 'Unknown')
-                ->descriptionIcon(Heroicon::OUTLINE_CLOCK)
+                ->descriptionIcon(Heroicon::OutlinedClock)
                 ->color(($healthData['performance']['Assessment'] ?? '') === 'fast' ? 'success' : 'warning'),
 
             Stat::make('System Issues', count($healthData['errors'] ?? []))
                 ->description('Active problems')
-                ->descriptionIcon(Heroicon::OUTLINE_EXCLAMATION_TRIANGLE)
+                ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
                 ->color(count($healthData['errors'] ?? []) === 0 ? 'success' : 'danger'),
 
             Stat::make('Last Check', $this->formatLastCheck($healthData['last_check'] ?? null))
                 ->description('Health verification')
-                ->descriptionIcon(Heroicon::OUTLINE_CLOCK)
+                ->descriptionIcon(Heroicon::OutlinedClock)
                 ->color('info'),
         ];
     }
@@ -43,12 +43,12 @@ class HealthOverviewWidget extends BaseWidget
     private function getStatusIcon(string $status): string
     {
         return match ($status) {
-            'excellent' => Heroicon::OUTLINE_CHECK_CIRCLE,
-            'good' => Heroicon::OUTLINE_CHECK_BADGE,
-            'fair' => Heroicon::OUTLINE_EXCLAMATION_TRIANGLE,
-            'poor' => Heroicon::OUTLINE_X_CIRCLE,
-            'critical', 'error' => Heroicon::OUTLINE_X_CIRCLE,
-            default => Heroicon::OUTLINE_QUESTION_MARK_CIRCLE,
+            'excellent' => Heroicon::OutlinedCheckCircle,
+            'good' => Heroicon::OutlinedCheckBadge,
+            'fair' => Heroicon::OutlinedExclamationTriangle,
+            'poor' => Heroicon::OutlinedXCircle,
+            'critical', 'error' => Heroicon::OutlinedXCircle,
+            default => Heroicon::OutlinedQuestionMarkCircle,
         };
     }
 

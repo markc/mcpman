@@ -9,7 +9,7 @@ use App\Services\McpClient;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Log;
 
 class McpDashboard extends Page
@@ -52,7 +52,7 @@ class McpDashboard extends Page
         return [
             Action::make('testAllConnections')
                 ->label('Test All Connections')
-                ->icon(Heroicon::OUTLINE_SIGNAL)
+                ->icon(Heroicon::OutlinedSignal)
                 ->action('testAllConnections')
                 ->requiresConfirmation()
                 ->modalHeading('Test All MCP Connections')

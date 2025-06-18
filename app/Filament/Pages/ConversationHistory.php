@@ -14,7 +14,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
@@ -112,19 +112,19 @@ class ConversationHistory extends Page implements HasForms
         return [
             Action::make('refreshStats')
                 ->label('Refresh Statistics')
-                ->icon(Heroicon::OUTLINE_ARROW_PATH)
+                ->icon(Heroicon::OutlinedArrowPath)
                 ->action('refreshStatistics'),
 
             Action::make('exportConversation')
                 ->label('Export Conversation')
-                ->icon(Heroicon::OUTLINE_ARROW_DOWN_TRAY)
+                ->icon(Heroicon::OutlinedArrowDownTray)
                 ->action('exportSelectedConversation')
                 ->visible(fn () => $this->selectedConversation !== null)
                 ->color('success'),
 
             Action::make('archiveConversation')
                 ->label('Archive Conversation')
-                ->icon(Heroicon::OUTLINE_ARCHIVE_BOX)
+                ->icon(Heroicon::OutlinedArchiveBox)
                 ->action('archiveSelectedConversation')
                 ->visible(fn () => $this->selectedConversation?->isActive())
                 ->requiresConfirmation()
@@ -132,7 +132,7 @@ class ConversationHistory extends Page implements HasForms
 
             Action::make('deleteConversation')
                 ->label('Delete Conversation')
-                ->icon(Heroicon::OUTLINE_TRASH)
+                ->icon(Heroicon::OutlinedTrash)
                 ->action('deleteSelectedConversation')
                 ->visible(fn () => $this->selectedConversation !== null)
                 ->requiresConfirmation()
@@ -141,7 +141,7 @@ class ConversationHistory extends Page implements HasForms
 
             Action::make('clearAllFilters')
                 ->label('Clear Filters')
-                ->icon(Heroicon::OUTLINE_FUNNEL)
+                ->icon(Heroicon::OutlinedFunnel)
                 ->action('clearAllFilters')
                 ->color('gray'),
         ];

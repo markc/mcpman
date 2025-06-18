@@ -6,7 +6,7 @@ use App\Models\McpConnection;
 use App\Services\McpClient;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -66,7 +66,7 @@ class McpConnectionsWidget extends BaseWidget
             ->actions([
                 Action::make('test')
                     ->label('Test')
-                    ->icon(Heroicon::OUTLINE_SIGNAL)
+                    ->icon(Heroicon::OutlinedSignal)
                     ->action(function (McpConnection $record) {
                         $this->testConnection($record);
                     }),

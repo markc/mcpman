@@ -13,8 +13,8 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Heroicon;
 use Filament\Support\Enums\Width;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
@@ -109,26 +109,26 @@ class ResourceBrowser extends Page implements HasForms
         return [
             Action::make('discoverAllResources')
                 ->label('Discover All Resources')
-                ->icon(Heroicon::OUTLINE_MAGNIFYING_GLASS)
+                ->icon(Heroicon::OutlinedMagnifyingGlass)
                 ->action('discoverAllResources')
                 ->requiresConfirmation()
                 ->modalDescription('This will scan all active MCP connections and discover available resources. This may take a few moments.'),
 
             Action::make('refreshStats')
                 ->label('Refresh Statistics')
-                ->icon(Heroicon::OUTLINE_ARROW_PATH)
+                ->icon(Heroicon::OutlinedArrowPath)
                 ->action('refreshStatistics'),
 
             Action::make('clearCache')
                 ->label('Clear Cache')
-                ->icon(Heroicon::OUTLINE_TRASH)
+                ->icon(Heroicon::OutlinedTrash)
                 ->action('clearResourceCache')
                 ->requiresConfirmation()
                 ->color('danger'),
 
             Action::make('syncResource')
                 ->label('Sync Resource')
-                ->icon(Heroicon::OUTLINE_ARROW_PATH_ROUNDED_SQUARE)
+                ->icon(Heroicon::OutlinedArrowPathRoundedSquare)
                 ->form([
                     Select::make('targetConnection')
                         ->label('Target Connection')
