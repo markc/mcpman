@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\DevelopmentEnvironmentResource\Pages;
 use App\Models\DevelopmentEnvironment;
 use App\Models\ProxmoxCluster;
+use BackedEnum;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Placeholder;
@@ -24,16 +25,17 @@ use Filament\Tables\Columns\ProgressColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class DevelopmentEnvironmentResource extends Resource
 {
     protected static ?string $model = DevelopmentEnvironment::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cube';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-cube';
 
     protected static ?string $navigationLabel = 'Dev Environments';
 
-    protected static ?string $navigationGroup = 'Proxmox Management';
+    protected static string|UnitEnum|null $navigationGroup = 'Proxmox Management';
 
     protected static ?int $navigationSort = 2;
 
