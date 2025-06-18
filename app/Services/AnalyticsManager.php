@@ -313,7 +313,7 @@ class AnalyticsManager
             ->get();
 
         $usersByHour = McpAnalytics::selectRaw('
-            HOUR(created_at) as hour,
+            CAST(strftime(\'%H\', created_at) AS INTEGER) as hour,
             COUNT(DISTINCT user_id) as unique_users,
             COUNT(*) as total_events
         ')
