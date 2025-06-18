@@ -18,10 +18,31 @@ class McpProcessOrchestrator
 
     private array $healthCheckIntervals = [];
 
+    private bool $initialized = false;
+
     public function __construct()
     {
-        $this->loadPersistedProcesses();
-        $this->initializeRedisTracking();
+        // Defer initialization until first use to avoid database queries during testing setup
+    }
+
+    /**
+     * Lazy initialization to defer database queries until needed
+     */
+    private function ensureInitialized(): void
+    {
+        if ($this->initialized) {
+            return;
+        }
+
+        try {
+            $this->loadPersistedProcesses();
+            $this->initializeRedisTracking();
+            $this->initialized = true;
+        } catch (\Exception $e) {
+            Log::warning('Failed to initialize McpProcessOrchestrator', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -108,6 +129,8 @@ class McpProcessOrchestrator
      */
     public function startProcess(string $processName, array $command, array $options = []): array
     {
+        $this->ensureInitialized();
+
         try {
             Log::info('Starting MCP process', ['name' => $processName, 'command' => $command]);
 
@@ -211,6 +234,8 @@ class McpProcessOrchestrator
      */
     public function stopProcess(string $processName): array
     {
+        $this->ensureInitialized();
+
         try {
             Log::info('Stopping MCP process', ['name' => $processName]);
 
@@ -286,6 +311,8 @@ class McpProcessOrchestrator
      */
     public function isProcessRunning(string $processName): bool
     {
+        $this->ensureInitialized();
+
         // Try Redis cache first for fast lookup (if available)
         if ($this->isRedisAvailable()) {
             try {
@@ -339,6 +366,8 @@ class McpProcessOrchestrator
      */
     public function getProcessStatus(string $processName): array
     {
+        $this->ensureInitialized();
+
         $status = McpProcessStatus::where('process_name', $processName)
             ->latest()
             ->first();
@@ -371,6 +400,8 @@ class McpProcessOrchestrator
      */
     public function getAllProcessesStatus(): array
     {
+        $this->ensureInitialized();
+
         $statuses = McpProcessStatus::where('status', '!=', 'stopped')
             ->get()
             ->keyBy('process_name');
@@ -388,6 +419,8 @@ class McpProcessOrchestrator
      */
     public function restartProcess(string $processName): array
     {
+        $this->ensureInitialized();
+
         $stopResult = $this->stopProcess($processName);
 
         if (! $stopResult['success']) {
