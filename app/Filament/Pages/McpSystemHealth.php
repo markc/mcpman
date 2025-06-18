@@ -10,6 +10,7 @@ use App\Services\McpHealthCheckService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Enums\Heroicon;
 
 class McpSystemHealth extends Page
 {
@@ -54,19 +55,19 @@ class McpSystemHealth extends Page
         return [
             Action::make('refreshHealth')
                 ->label('Refresh Health Check')
-                ->icon('heroicon-o-arrow-path')
+                ->icon(Heroicon::OUTLINE_ARROW_PATH)
                 ->action('refreshHealthCheck'),
 
             Action::make('clearCache')
                 ->label('Clear Cache')
-                ->icon('heroicon-o-trash')
+                ->icon(Heroicon::OUTLINE_TRASH)
                 ->action('clearHealthCache')
                 ->color('warning')
                 ->requiresConfirmation(),
 
             Action::make('runDiagnostics')
                 ->label('Run Full Diagnostics')
-                ->icon('heroicon-o-wrench-screwdriver')
+                ->icon(Heroicon::OUTLINE_WRENCH_SCREWDRIVER)
                 ->action('runFullDiagnostics')
                 ->color('info'),
         ];
@@ -169,12 +170,12 @@ class McpSystemHealth extends Page
     public function getStatusIcon(): string
     {
         return match ($this->healthData['status'] ?? 'unknown') {
-            'excellent' => 'heroicon-o-check-circle',
-            'good' => 'heroicon-o-check-badge',
-            'fair' => 'heroicon-o-exclamation-triangle',
-            'poor' => 'heroicon-o-x-circle',
-            'critical', 'error' => 'heroicon-o-x-circle',
-            default => 'heroicon-o-question-mark-circle',
+            'excellent' => Heroicon::OUTLINE_CHECK_CIRCLE,
+            'good' => Heroicon::OUTLINE_CHECK_BADGE,
+            'fair' => Heroicon::OUTLINE_EXCLAMATION_TRIANGLE,
+            'poor' => Heroicon::OUTLINE_X_CIRCLE,
+            'critical', 'error' => Heroicon::OUTLINE_X_CIRCLE,
+            default => Heroicon::OUTLINE_QUESTION_MARK_CIRCLE,
         };
     }
 
@@ -201,11 +202,11 @@ class McpSystemHealth extends Page
     public function getRecommendationIcon(string $type): string
     {
         return match ($type) {
-            'success' => 'heroicon-o-check-circle',
-            'info' => 'heroicon-o-information-circle',
-            'warning' => 'heroicon-o-exclamation-triangle',
-            'error' => 'heroicon-o-x-circle',
-            default => 'heroicon-o-light-bulb',
+            'success' => Heroicon::OUTLINE_CHECK_CIRCLE,
+            'info' => Heroicon::OUTLINE_INFORMATION_CIRCLE,
+            'warning' => Heroicon::OUTLINE_EXCLAMATION_TRIANGLE,
+            'error' => Heroicon::OUTLINE_X_CIRCLE,
+            default => Heroicon::OUTLINE_LIGHT_BULB,
         };
     }
 

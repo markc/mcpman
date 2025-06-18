@@ -14,6 +14,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Heroicon;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 
@@ -111,19 +112,19 @@ class ConversationHistory extends Page implements HasForms
         return [
             Action::make('refreshStats')
                 ->label('Refresh Statistics')
-                ->icon('heroicon-o-arrow-path')
+                ->icon(Heroicon::OUTLINE_ARROW_PATH)
                 ->action('refreshStatistics'),
 
             Action::make('exportConversation')
                 ->label('Export Conversation')
-                ->icon('heroicon-o-arrow-down-tray')
+                ->icon(Heroicon::OUTLINE_ARROW_DOWN_TRAY)
                 ->action('exportSelectedConversation')
                 ->visible(fn () => $this->selectedConversation !== null)
                 ->color('success'),
 
             Action::make('archiveConversation')
                 ->label('Archive Conversation')
-                ->icon('heroicon-o-archive-box')
+                ->icon(Heroicon::OUTLINE_ARCHIVE_BOX)
                 ->action('archiveSelectedConversation')
                 ->visible(fn () => $this->selectedConversation?->isActive())
                 ->requiresConfirmation()
@@ -131,7 +132,7 @@ class ConversationHistory extends Page implements HasForms
 
             Action::make('deleteConversation')
                 ->label('Delete Conversation')
-                ->icon('heroicon-o-trash')
+                ->icon(Heroicon::OUTLINE_TRASH)
                 ->action('deleteSelectedConversation')
                 ->visible(fn () => $this->selectedConversation !== null)
                 ->requiresConfirmation()
@@ -140,7 +141,7 @@ class ConversationHistory extends Page implements HasForms
 
             Action::make('clearAllFilters')
                 ->label('Clear Filters')
-                ->icon('heroicon-o-funnel')
+                ->icon(Heroicon::OUTLINE_FUNNEL)
                 ->action('clearAllFilters')
                 ->color('gray'),
         ];

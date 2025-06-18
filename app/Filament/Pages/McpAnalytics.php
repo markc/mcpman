@@ -12,6 +12,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Heroicon;
 use Illuminate\Support\Facades\Cache;
 
 class McpAnalytics extends Page implements HasForms
@@ -90,24 +91,24 @@ class McpAnalytics extends Page implements HasForms
         return [
             Action::make('refreshData')
                 ->label('Refresh Data')
-                ->icon('heroicon-o-arrow-path')
+                ->icon(Heroicon::OUTLINE_ARROW_PATH)
                 ->action('refreshData'),
 
             Action::make('exportData')
                 ->label('Export Analytics')
-                ->icon('heroicon-o-arrow-down-tray')
+                ->icon(Heroicon::OUTLINE_ARROW_DOWN_TRAY)
                 ->action('exportAnalytics'),
 
             Action::make('clearCache')
                 ->label('Clear Cache')
-                ->icon('heroicon-o-trash')
+                ->icon(Heroicon::OUTLINE_TRASH)
                 ->action('clearAnalyticsCache')
                 ->color('danger')
                 ->requiresConfirmation(),
 
             Action::make('cleanOldData')
                 ->label('Clean Old Data')
-                ->icon('heroicon-o-archive-box-x-mark')
+                ->icon(Heroicon::OUTLINE_ARCHIVE_BOX_X_MARK)
                 ->action('cleanOldData')
                 ->color('warning')
                 ->requiresConfirmation()
@@ -240,28 +241,28 @@ class McpAnalytics extends Page implements HasForms
                 'label' => 'Total Events',
                 'value' => number_format($summary['total_events'] ?? 0),
                 'description' => 'Events in selected period',
-                'icon' => 'heroicon-o-chart-bar',
+                'icon' => Heroicon::OUTLINE_CHART_BAR,
                 'color' => 'info',
             ],
             [
                 'label' => 'Success Rate',
                 'value' => number_format($summary['success_rate'] ?? 0, 1).'%',
                 'description' => 'Successful operations',
-                'icon' => 'heroicon-o-check-circle',
+                'icon' => Heroicon::OUTLINE_CHECK_CIRCLE,
                 'color' => 'success',
             ],
             [
                 'label' => 'Active Users',
                 'value' => number_format($summary['unique_users'] ?? 0),
                 'description' => 'Unique users',
-                'icon' => 'heroicon-o-users',
+                'icon' => Heroicon::OUTLINE_USERS,
                 'color' => 'warning',
             ],
             [
                 'label' => 'Avg Response Time',
                 'value' => number_format($summary['average_response_time'] ?? 0).'ms',
                 'description' => 'Average duration',
-                'icon' => 'heroicon-o-clock',
+                'icon' => Heroicon::OUTLINE_CLOCK,
                 'color' => 'primary',
             ],
         ];
@@ -274,21 +275,21 @@ class McpAnalytics extends Page implements HasForms
                 'label' => 'Events (Last Hour)',
                 'value' => number_format($this->realTimeMetrics['events_last_hour'] ?? 0),
                 'description' => 'Recent activity',
-                'icon' => 'heroicon-o-bolt',
+                'icon' => Heroicon::OUTLINE_BOLT,
                 'color' => 'info',
             ],
             [
                 'label' => 'Errors (Last Hour)',
                 'value' => number_format($this->realTimeMetrics['errors_last_hour'] ?? 0),
                 'description' => 'Recent errors',
-                'icon' => 'heroicon-o-exclamation-triangle',
+                'icon' => Heroicon::OUTLINE_EXCLAMATION_TRIANGLE,
                 'color' => 'danger',
             ],
             [
                 'label' => 'Active Users',
                 'value' => number_format($this->realTimeMetrics['active_users_last_hour'] ?? 0),
                 'description' => 'Currently active',
-                'icon' => 'heroicon-o-user-group',
+                'icon' => Heroicon::OUTLINE_USER_GROUP,
                 'color' => 'success',
             ],
         ];

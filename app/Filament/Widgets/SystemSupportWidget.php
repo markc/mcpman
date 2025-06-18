@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Services\LogMonitoringService;
+use Filament\Support\Enums\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -36,12 +37,12 @@ class SystemSupportWidget extends BaseWidget
         return [
             Stat::make('System Support', $stats['monitoring_supported'] ? 'Available' : 'Unavailable')
                 ->description($stats['monitoring_supported'] ? 'Log monitoring is available' : 'Log monitoring unavailable')
-                ->descriptionIcon($stats['monitoring_supported'] ? 'heroicon-o-check-circle' : 'heroicon-o-x-circle')
+                ->descriptionIcon($stats['monitoring_supported'] ? Heroicon::OUTLINE_CHECK_CIRCLE : Heroicon::OUTLINE_X_CIRCLE)
                 ->color($stats['monitoring_supported'] ? 'success' : 'danger'),
 
             Stat::make('Error Patterns', $stats['patterns_configured'] ?? 11)
                 ->description('Detection patterns configured')
-                ->descriptionIcon('heroicon-o-puzzle-piece')
+                ->descriptionIcon(Heroicon::OUTLINE_PUZZLE_PIECE)
                 ->color('info'),
         ];
     }

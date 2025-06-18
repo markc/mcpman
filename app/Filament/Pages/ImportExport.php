@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Heroicon;
 use Illuminate\Support\Facades\Storage;
 
 class ImportExport extends Page implements HasForms
@@ -178,7 +179,7 @@ class ImportExport extends Page implements HasForms
         return [
             Action::make('cleanupOldExports')
                 ->label('Cleanup Old Exports')
-                ->icon('heroicon-o-trash')
+                ->icon(Heroicon::OUTLINE_TRASH)
                 ->action('cleanupOldExports')
                 ->color('warning')
                 ->requiresConfirmation()

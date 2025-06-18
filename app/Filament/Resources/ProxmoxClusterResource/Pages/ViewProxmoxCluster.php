@@ -12,6 +12,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\Heroicon;
 
 class ViewProxmoxCluster extends ViewRecord
 {
@@ -21,7 +22,7 @@ class ViewProxmoxCluster extends ViewRecord
     {
         return [
             Actions\Action::make('health_check')
-                ->icon('heroicon-o-heart')
+                ->icon(Heroicon::OUTLINE_HEART)
                 ->color('info')
                 ->action(function () {
                     $monitoringService = new ProxmoxMonitoringService($this->record);

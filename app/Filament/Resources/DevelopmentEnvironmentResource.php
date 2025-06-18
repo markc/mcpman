@@ -16,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\DeleteAction;
@@ -31,7 +32,7 @@ class DevelopmentEnvironmentResource extends Resource
 {
     protected static ?string $model = DevelopmentEnvironment::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-cube';
+    protected static BackedEnum|string|null $navigationIcon = Heroicon::OUTLINE_CUBE;
 
     protected static ?string $navigationLabel = 'Dev Environments';
 
@@ -326,7 +327,7 @@ class DevelopmentEnvironmentResource extends Resource
             ])
             ->actions([
                 Action::make('start')
-                    ->icon('heroicon-o-play')
+                    ->icon(Heroicon::OUTLINE_PLAY)
                     ->color('success')
                     ->visible(fn (DevelopmentEnvironment $record): bool => $record->isStopped())
                     ->action(function (DevelopmentEnvironment $record) {
@@ -339,7 +340,7 @@ class DevelopmentEnvironmentResource extends Resource
                     }),
 
                 Action::make('stop')
-                    ->icon('heroicon-o-stop')
+                    ->icon(Heroicon::OUTLINE_STOP)
                     ->color('warning')
                     ->visible(fn (DevelopmentEnvironment $record): bool => $record->isRunning())
                     ->requiresConfirmation()
@@ -353,7 +354,7 @@ class DevelopmentEnvironmentResource extends Resource
                     }),
 
                 Action::make('access')
-                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->icon(Heroicon::OUTLINE_ARROW_TOP_RIGHT_ON_SQUARE)
                     ->color('info')
                     ->visible(fn (DevelopmentEnvironment $record): bool => $record->isRunning())
                     ->url(function (DevelopmentEnvironment $record): ?string {

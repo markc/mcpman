@@ -12,6 +12,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\Heroicon;
 
 class ViewDevelopmentEnvironment extends ViewRecord
 {
@@ -21,7 +22,7 @@ class ViewDevelopmentEnvironment extends ViewRecord
     {
         return [
             Actions\Action::make('start')
-                ->icon('heroicon-o-play')
+                ->icon(Heroicon::OUTLINE_PLAY)
                 ->color('success')
                 ->visible(fn () => $this->record->isStopped())
                 ->action(function () {
@@ -34,7 +35,7 @@ class ViewDevelopmentEnvironment extends ViewRecord
                 }),
 
             Actions\Action::make('stop')
-                ->icon('heroicon-o-stop')
+                ->icon(Heroicon::OUTLINE_STOP)
                 ->color('warning')
                 ->visible(fn () => $this->record->isRunning())
                 ->requiresConfirmation()
@@ -48,7 +49,7 @@ class ViewDevelopmentEnvironment extends ViewRecord
                 }),
 
             Actions\Action::make('access_urls')
-                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->icon(Heroicon::OUTLINE_ARROW_TOP_RIGHT_ON_SQUARE)
                 ->color('info')
                 ->visible(fn () => $this->record->isRunning())
                 ->action(function () {

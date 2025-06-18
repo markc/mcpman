@@ -8,6 +8,7 @@ use App\Models\ProxmoxContainer;
 use App\Models\ProxmoxVirtualMachine;
 use BackedEnum;
 use Filament\Pages\Page;
+use Filament\Support\Enums\Heroicon;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -15,7 +16,7 @@ use UnitEnum;
 
 class ProxmoxExecutiveDashboard extends Page
 {
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-chart-bar';
+    protected static BackedEnum|string|null $navigationIcon = Heroicon::OUTLINE_CHART_BAR;
 
     protected string $view = 'filament.pages.proxmox-executive-dashboard';
 
@@ -102,24 +103,24 @@ class ExecutiveKPIWidget extends StatsOverviewWidget
         return [
             Stat::make('Active Development Environments', $activeEnvironments)
                 ->description("{$totalEnvironments} total environments")
-                ->descriptionIcon('heroicon-o-cube')
+                ->descriptionIcon(Heroicon::OUTLINE_CUBE)
                 ->color('success')
                 ->chart([7, 12, 8, 15, 18, 22, $activeEnvironments]),
 
             Stat::make('Monthly Platform Cost', '$'.number_format($totalMonthlyCost, 2))
                 ->description('Estimated operational cost')
-                ->descriptionIcon('heroicon-o-currency-dollar')
+                ->descriptionIcon(Heroicon::OUTLINE_CURRENCY_DOLLAR)
                 ->color('warning'),
 
             Stat::make('Running Virtual Machines', $runningVMs)
                 ->description("{$totalVMs} total VMs")
-                ->descriptionIcon('heroicon-o-server')
+                ->descriptionIcon(Heroicon::OUTLINE_SERVER)
                 ->color('info')
                 ->chart([15, 18, 22, 25, 20, 24, $runningVMs]),
 
             Stat::make('Running Containers', $runningContainers)
                 ->description("{$totalContainers} total containers")
-                ->descriptionIcon('heroicon-o-cube-transparent')
+                ->descriptionIcon(Heroicon::OUTLINE_CUBE_TRANSPARENT)
                 ->color('primary')
                 ->chart([8, 12, 15, 18, 16, 20, $runningContainers]),
         ];
@@ -343,22 +344,22 @@ class ClusterHealthWidget extends StatsOverviewWidget
         return [
             Stat::make('Average Cluster Health', $averageHealth.'%')
                 ->description('Overall platform health')
-                ->descriptionIcon('heroicon-o-heart')
+                ->descriptionIcon(Heroicon::OUTLINE_HEART)
                 ->color($averageHealth >= 80 ? 'success' : ($averageHealth >= 60 ? 'warning' : 'danger')),
 
             Stat::make('Healthy Clusters', $healthyCount)
                 ->description('Health score ≥ 80%')
-                ->descriptionIcon('heroicon-o-check-circle')
+                ->descriptionIcon(Heroicon::OUTLINE_CHECK_CIRCLE)
                 ->color('success'),
 
             Stat::make('Warning Clusters', $warningCount)
                 ->description('Health score 60-79%')
-                ->descriptionIcon('heroicon-o-exclamation-triangle')
+                ->descriptionIcon(Heroicon::OUTLINE_EXCLAMATION_TRIANGLE)
                 ->color('warning'),
 
             Stat::make('Critical Clusters', $criticalCount)
                 ->description('Health score < 60%')
-                ->descriptionIcon('heroicon-o-x-circle')
+                ->descriptionIcon(Heroicon::OUTLINE_X_CIRCLE)
                 ->color('danger'),
         ];
     }

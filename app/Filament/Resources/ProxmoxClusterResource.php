@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\DeleteAction;
@@ -27,7 +28,7 @@ class ProxmoxClusterResource extends Resource
 {
     protected static ?string $model = ProxmoxCluster::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-server-stack';
+    protected static BackedEnum|string|null $navigationIcon = Heroicon::OUTLINE_SERVER_STACK;
 
     protected static ?string $navigationLabel = 'Proxmox Clusters';
 
@@ -185,7 +186,7 @@ class ProxmoxClusterResource extends Resource
             ])
             ->actions([
                 Action::make('health_check')
-                    ->icon('heroicon-o-heart')
+                    ->icon(Heroicon::OUTLINE_HEART)
                     ->color('info')
                     ->action(function (ProxmoxCluster $record) {
                         $monitoringService = new \App\Services\ProxmoxMonitoringService($record);
@@ -200,7 +201,7 @@ class ProxmoxClusterResource extends Resource
                 EditAction::make(),
 
                 Action::make('view_details')
-                    ->icon('heroicon-o-eye')
+                    ->icon(Heroicon::OUTLINE_EYE)
                     ->url(fn (ProxmoxCluster $record): string => route('filament.admin.resources.proxmox-clusters.view', $record)
                     ),
 

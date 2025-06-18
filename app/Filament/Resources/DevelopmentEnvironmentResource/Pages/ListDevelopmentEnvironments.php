@@ -5,6 +5,7 @@ namespace App\Filament\Resources\DevelopmentEnvironmentResource\Pages;
 use App\Filament\Resources\DevelopmentEnvironmentResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Enums\Heroicon;
 
 class ListDevelopmentEnvironments extends ListRecords
 {
@@ -15,7 +16,7 @@ class ListDevelopmentEnvironments extends ListRecords
         return [
             Actions\CreateAction::make()
                 ->label('Create Environment')
-                ->icon('heroicon-o-plus'),
+                ->icon(Heroicon::OUTLINE_PLUS),
         ];
     }
 }
