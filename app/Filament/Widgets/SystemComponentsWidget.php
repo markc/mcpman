@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Services\McpHealthCheckService;
+use Filament\Support\Enums\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -19,22 +20,22 @@ class SystemComponentsWidget extends BaseWidget
         return [
             Stat::make('Claude CLI', $components['Claude CLI'] ?? 'Unknown')
                 ->description('Command line interface')
-                ->descriptionIcon('heroicon-o-command-line')
+                ->descriptionIcon(Heroicon::OUTLINE_COMMAND_LINE)
                 ->color($this->getComponentColor($components['Claude CLI'] ?? 'Unknown')),
 
             Stat::make('Authentication', $components['Authentication'] ?? 'Unknown')
                 ->description('API key validation')
-                ->descriptionIcon('heroicon-o-key')
+                ->descriptionIcon(Heroicon::OUTLINE_KEY)
                 ->color($this->getComponentColor($components['Authentication'] ?? 'Unknown')),
 
             Stat::make('MCP Server', $components['MCP Server'] ?? 'Unknown')
                 ->description('Protocol server')
-                ->descriptionIcon('heroicon-o-server')
+                ->descriptionIcon(Heroicon::OUTLINE_SERVER)
                 ->color($this->getComponentColor($components['MCP Server'] ?? 'Unknown')),
 
             Stat::make('Connection Pool', $this->getActiveConnections())
                 ->description('Active connections')
-                ->descriptionIcon('heroicon-o-link')
+                ->descriptionIcon(Heroicon::OUTLINE_LINK)
                 ->color('info'),
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Services\LogMonitoringService;
+use Filament\Support\Enums\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -23,12 +24,12 @@ class LogFileStatusWidget extends BaseWidget
         return [
             Stat::make('Log File', $stats['log_file_exists'] ? 'Found' : 'Missing')
                 ->description($stats['log_file_exists'] ? 'Log file is accessible' : 'Log file not found')
-                ->descriptionIcon($stats['log_file_exists'] ? 'heroicon-o-check-circle' : 'heroicon-o-x-circle')
+                ->descriptionIcon($stats['log_file_exists'] ? Heroicon::OUTLINE_CHECK_CIRCLE : Heroicon::OUTLINE_X_CIRCLE)
                 ->color($stats['log_file_exists'] ? 'success' : 'danger'),
 
             Stat::make('Log Size', $this->formatFileSize($stats['log_file_size'] ?? 0))
                 ->description('Current log file size')
-                ->descriptionIcon('heroicon-o-chart-bar')
+                ->descriptionIcon(Heroicon::OUTLINE_CHART_BAR)
                 ->color('primary'),
         ];
     }

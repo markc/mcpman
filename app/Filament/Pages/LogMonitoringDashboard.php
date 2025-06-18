@@ -11,6 +11,7 @@ use App\Services\McpProcessOrchestrator;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Support\Enums\Heroicon;
 
 class LogMonitoringDashboard extends Page
 {
@@ -39,19 +40,19 @@ class LogMonitoringDashboard extends Page
         return [
             Action::make('toggleMonitoring')
                 ->label($isMonitoring ? 'Stop Monitoring' : 'Start Monitoring')
-                ->icon($isMonitoring ? 'heroicon-o-stop' : 'heroicon-o-play')
+                ->icon($isMonitoring ? Heroicon::OUTLINE_STOP : Heroicon::OUTLINE_PLAY)
                 ->color($isMonitoring ? 'danger' : 'success')
                 ->action($isMonitoring ? 'stopLogMonitoring' : 'startLogMonitoring'),
 
             Action::make('testErrorDetection')
                 ->label('Test Error Detection')
-                ->icon('heroicon-o-bug-ant')
+                ->icon(Heroicon::OUTLINE_BUG_ANT)
                 ->color('warning')
                 ->action('testErrorDetection'),
 
             Action::make('refreshStats')
                 ->label('Refresh Stats')
-                ->icon('heroicon-o-arrow-path')
+                ->icon(Heroicon::OUTLINE_ARROW_PATH)
                 ->action('refreshMonitoringStats'),
         ];
     }
@@ -189,7 +190,7 @@ class LogMonitoringDashboard extends Page
 
     public function getStatusIcon(bool $status): string
     {
-        return $status ? 'heroicon-o-check-circle' : 'heroicon-o-x-circle';
+        return $status ? Heroicon::OUTLINE_CHECK_CIRCLE : Heroicon::OUTLINE_X_CIRCLE;
     }
 
     public function formatFileSize(int $bytes): string

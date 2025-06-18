@@ -10,6 +10,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Heroicon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -101,19 +102,19 @@ class SystemLogs extends Page implements HasForms
         return [
             Action::make('clearLogs')
                 ->label('Clear Current Log')
-                ->icon('heroicon-o-trash')
+                ->icon(Heroicon::OUTLINE_TRASH)
                 ->action('clearCurrentLog')
                 ->color('danger')
                 ->requiresConfirmation(),
 
             Action::make('downloadLog')
                 ->label('Download Log')
-                ->icon('heroicon-o-arrow-down-tray')
+                ->icon(Heroicon::OUTLINE_ARROW_DOWN_TRAY)
                 ->action('downloadCurrentLog'),
 
             Action::make('refreshLogs')
                 ->label('Refresh')
-                ->icon('heroicon-o-arrow-path')
+                ->icon(Heroicon::OUTLINE_ARROW_PATH)
                 ->action('refreshLogs'),
         ];
     }

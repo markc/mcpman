@@ -16,6 +16,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Heroicon;
 use Illuminate\Support\Facades\Log;
 
 class McpConversation extends Page implements HasForms
@@ -111,27 +112,27 @@ class McpConversation extends Page implements HasForms
         return [
             Action::make('sendMessage')
                 ->label('Send Message')
-                ->icon('heroicon-o-paper-airplane')
+                ->icon(Heroicon::OUTLINE_PAPER_AIRPLANE)
                 ->action('sendMessage')
                 ->disabled(fn () => empty($this->data['selectedConnection'] ?? null)),
 
             Action::make('callTool')
                 ->label('Call Tool')
-                ->icon('heroicon-o-wrench')
+                ->icon(Heroicon::OUTLINE_WRENCH)
                 ->action('callTool')
                 ->disabled(fn () => empty($this->data['selectedConnection'] ?? null) || empty($this->data['selectedTool'] ?? null))
                 ->visible(fn () => ! empty($this->data['selectedTool'] ?? null)),
 
             Action::make('clearConversation')
                 ->label('Clear')
-                ->icon('heroicon-o-trash')
+                ->icon(Heroicon::OUTLINE_TRASH)
                 ->action('clearConversation')
                 ->color('danger')
                 ->requiresConfirmation(),
 
             Action::make('refreshTools')
                 ->label('Refresh Tools')
-                ->icon('heroicon-o-arrow-path')
+                ->icon(Heroicon::OUTLINE_ARROW_PATH)
                 ->action('loadTools'),
         ];
     }

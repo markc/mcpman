@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Models\McpProcessStatus;
 use App\Services\McpProcessOrchestrator;
+use Filament\Support\Enums\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Log;
@@ -32,23 +33,23 @@ class McpProcessStatusWidget extends BaseWidget
                         ? 'PID: '.($logMonitoringStatus['pid'] ?? 'N/A').' | Uptime: '.($logMonitoringStatus['uptime'] ?? 'N/A')
                         : 'Process not active'
                     )
-                    ->descriptionIcon($logMonitoringRunning ? 'heroicon-m-check-circle' : 'heroicon-m-x-circle')
+                    ->descriptionIcon($logMonitoringRunning ? Heroicon::MINI_CHECK_CIRCLE : Heroicon::MINI_X_CIRCLE)
                     ->color($logMonitoringRunning ? 'success' : 'danger')
                     ->chart($this->getProcessChart('log-monitoring')),
 
                 Stat::make('Running Processes', $runningProcesses)
                     ->description('Active MCP processes')
-                    ->descriptionIcon('heroicon-m-play-circle')
+                    ->descriptionIcon(Heroicon::MINI_PLAY_CIRCLE)
                     ->color($runningProcesses > 0 ? 'success' : 'gray'),
 
                 Stat::make('Failed Processes', $failedProcesses)
                     ->description('Processes that failed or died')
-                    ->descriptionIcon('heroicon-m-exclamation-triangle')
+                    ->descriptionIcon(Heroicon::MINI_EXCLAMATION_TRIANGLE)
                     ->color($failedProcesses > 0 ? 'danger' : 'success'),
 
                 Stat::make('Total Processes', $totalProcesses)
                     ->description('All tracked processes')
-                    ->descriptionIcon('heroicon-m-cpu-chip')
+                    ->descriptionIcon(Heroicon::MINI_CPU_CHIP)
                     ->color('primary'),
             ];
         } catch (\Exception $e) {
@@ -57,7 +58,7 @@ class McpProcessStatusWidget extends BaseWidget
             return [
                 Stat::make('Error', 'Failed to load')
                     ->description('Widget error: '.$e->getMessage())
-                    ->descriptionIcon('heroicon-m-exclamation-triangle')
+                    ->descriptionIcon(Heroicon::MINI_EXCLAMATION_TRIANGLE)
                     ->color('danger'),
             ];
         }
