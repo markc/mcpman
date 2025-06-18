@@ -22,7 +22,6 @@ use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\BadgeColumn;
-use Filament\Tables\Columns\ProgressColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -271,15 +270,20 @@ class DevelopmentEnvironmentResource extends Resource
                                round($record->total_storage_bytes / (1024 ** 3), 1).'GB';
                     }),
 
-                ProgressColumn::make('health_score')
+                TextColumn::make('health_score')
                     ->label('Health')
-                    ->getStateUsing(function (DevelopmentEnvironment $record): int {
-                        return $record->getHealthScore();
+                    ->getStateUsing(function (DevelopmentEnvironment $record): string {
+                        $score = $record->getHealthScore();
+
+                        return $score.'%';
                     })
-                    ->color(function (int $state): string {
+                    ->badge()
+                    ->color(function (DevelopmentEnvironment $record): string {
+                        $score = $record->getHealthScore();
+
                         return match (true) {
-                            $state >= 80 => 'success',
-                            $state >= 60 => 'warning',
+                            $score >= 80 => 'success',
+                            $score >= 60 => 'warning',
                             default => 'danger',
                         };
                     }),
