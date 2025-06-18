@@ -14,7 +14,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -228,7 +228,7 @@ class McpSecurity extends Page implements HasForms, HasTable
         return [
             Action::make('save')
                 ->label('Save Security Settings')
-                ->icon(Heroicon::OUTLINE_SHIELD_CHECK)
+                ->icon(Heroicon::OutlinedShieldCheck)
                 ->action('saveSecuritySettings')
                 ->requiresConfirmation()
                 ->modalHeading('Save Security Settings')
@@ -237,7 +237,7 @@ class McpSecurity extends Page implements HasForms, HasTable
 
             Action::make('auditConnections')
                 ->label('Audit All Connections')
-                ->icon(Heroicon::OUTLINE_EYE)
+                ->icon(Heroicon::OutlinedEye)
                 ->action('auditAllConnections')
                 ->color('info')
                 ->requiresConfirmation()
@@ -247,7 +247,7 @@ class McpSecurity extends Page implements HasForms, HasTable
 
             Action::make('revokeAll')
                 ->label('Revoke All Sessions')
-                ->icon(Heroicon::OUTLINE_X_CIRCLE)
+                ->icon(Heroicon::OutlinedXCircle)
                 ->action('revokeAllSessions')
                 ->color('danger')
                 ->requiresConfirmation()

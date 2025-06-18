@@ -12,7 +12,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Cache;
 
 class McpAnalytics extends Page implements HasForms
@@ -91,24 +91,24 @@ class McpAnalytics extends Page implements HasForms
         return [
             Action::make('refreshData')
                 ->label('Refresh Data')
-                ->icon(Heroicon::OUTLINE_ARROW_PATH)
+                ->icon(Heroicon::OutlinedArrowPath)
                 ->action('refreshData'),
 
             Action::make('exportData')
                 ->label('Export Analytics')
-                ->icon(Heroicon::OUTLINE_ARROW_DOWN_TRAY)
+                ->icon(Heroicon::OutlinedArrowDownTray)
                 ->action('exportAnalytics'),
 
             Action::make('clearCache')
                 ->label('Clear Cache')
-                ->icon(Heroicon::OUTLINE_TRASH)
+                ->icon(Heroicon::OutlinedTrash)
                 ->action('clearAnalyticsCache')
                 ->color('danger')
                 ->requiresConfirmation(),
 
             Action::make('cleanOldData')
                 ->label('Clean Old Data')
-                ->icon(Heroicon::OUTLINE_ARCHIVE_BOX_X_MARK)
+                ->icon(Heroicon::OutlinedArchiveBoxXMark)
                 ->action('cleanOldData')
                 ->color('warning')
                 ->requiresConfirmation()
@@ -241,28 +241,28 @@ class McpAnalytics extends Page implements HasForms
                 'label' => 'Total Events',
                 'value' => number_format($summary['total_events'] ?? 0),
                 'description' => 'Events in selected period',
-                'icon' => Heroicon::OUTLINE_CHART_BAR,
+                'icon' => Heroicon::OutlinedChartBar,
                 'color' => 'info',
             ],
             [
                 'label' => 'Success Rate',
                 'value' => number_format($summary['success_rate'] ?? 0, 1).'%',
                 'description' => 'Successful operations',
-                'icon' => Heroicon::OUTLINE_CHECK_CIRCLE,
+                'icon' => Heroicon::OutlinedCheckCircle,
                 'color' => 'success',
             ],
             [
                 'label' => 'Active Users',
                 'value' => number_format($summary['unique_users'] ?? 0),
                 'description' => 'Unique users',
-                'icon' => Heroicon::OUTLINE_USERS,
+                'icon' => Heroicon::OutlinedUsers,
                 'color' => 'warning',
             ],
             [
                 'label' => 'Avg Response Time',
                 'value' => number_format($summary['average_response_time'] ?? 0).'ms',
                 'description' => 'Average duration',
-                'icon' => Heroicon::OUTLINE_CLOCK,
+                'icon' => Heroicon::OutlinedClock,
                 'color' => 'primary',
             ],
         ];
@@ -275,21 +275,21 @@ class McpAnalytics extends Page implements HasForms
                 'label' => 'Events (Last Hour)',
                 'value' => number_format($this->realTimeMetrics['events_last_hour'] ?? 0),
                 'description' => 'Recent activity',
-                'icon' => Heroicon::OUTLINE_BOLT,
+                'icon' => Heroicon::OutlinedBolt,
                 'color' => 'info',
             ],
             [
                 'label' => 'Errors (Last Hour)',
                 'value' => number_format($this->realTimeMetrics['errors_last_hour'] ?? 0),
                 'description' => 'Recent errors',
-                'icon' => Heroicon::OUTLINE_EXCLAMATION_TRIANGLE,
+                'icon' => Heroicon::OutlinedExclamationTriangle,
                 'color' => 'danger',
             ],
             [
                 'label' => 'Active Users',
                 'value' => number_format($this->realTimeMetrics['active_users_last_hour'] ?? 0),
                 'description' => 'Currently active',
-                'icon' => Heroicon::OUTLINE_USER_GROUP,
+                'icon' => Heroicon::OutlinedUserGroup,
                 'color' => 'success',
             ],
         ];

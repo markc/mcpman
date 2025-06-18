@@ -13,7 +13,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\File;
 
 class McpConfiguration extends Page implements HasForms
@@ -189,7 +189,7 @@ class McpConfiguration extends Page implements HasForms
         return [
             Action::make('save')
                 ->label('Save Configuration')
-                ->icon(Heroicon::OUTLINE_CHECK)
+                ->icon(Heroicon::OutlinedCheckCircle)
                 ->action('saveConfiguration')
                 ->requiresConfirmation()
                 ->modalHeading('Save MCP Configuration')
@@ -198,7 +198,7 @@ class McpConfiguration extends Page implements HasForms
 
             Action::make('reset')
                 ->label('Reset to Defaults')
-                ->icon(Heroicon::OUTLINE_ARROW_PATH)
+                ->icon(Heroicon::OutlinedArrowPath)
                 ->action('resetConfiguration')
                 ->color('gray')
                 ->requiresConfirmation()
@@ -208,13 +208,13 @@ class McpConfiguration extends Page implements HasForms
 
             Action::make('export')
                 ->label('Export Config')
-                ->icon(Heroicon::OUTLINE_ARROW_DOWN_TRAY)
+                ->icon(Heroicon::OutlinedArrowDownTray)
                 ->action('exportConfiguration')
                 ->color('info'),
 
             Action::make('import')
                 ->label('Import Config')
-                ->icon(Heroicon::OUTLINE_ARROW_UP_TRAY)
+                ->icon(Heroicon::OutlinedArrowUpTray)
                 ->action('importConfiguration')
                 ->color('warning'),
         ];

@@ -6,7 +6,7 @@ use App\Models\ApiKey;
 use App\Models\Dataset;
 use App\Models\Document;
 use App\Models\McpConnection;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
@@ -43,25 +43,25 @@ class McpStatsWidget extends BaseWidget
             return [
                 Stat::make('MCP Connections', $totalConnections)
                     ->description($activeConnections.' active'.($weeklyConnections > 0 ? " • +{$weeklyConnections} this week" : ''))
-                    ->descriptionIcon($connectionGrowth > 0 ? Heroicon::MINI_ARROW_TRENDING_UP : Heroicon::MINI_SIGNAL)
+                    ->descriptionIcon($connectionGrowth > 0 ? Heroicon::ArrowTrendingUp : Heroicon::Signal)
                     ->color($activeConnections > 0 ? 'success' : 'warning')
                     ->chart($this->getConnectionTrend()),
 
                 Stat::make('Datasets', $totalDatasets)
                     ->description($weeklyDatasets.' this week'.($datasetGrowth > 0 ? " • +{$datasetGrowth}% growth" : ''))
-                    ->descriptionIcon($datasetGrowth > 0 ? Heroicon::MINI_ARROW_TRENDING_UP : Heroicon::MINI_TABLE_CELLS)
+                    ->descriptionIcon($datasetGrowth > 0 ? Heroicon::ArrowTrendingUp : Heroicon::TableCells)
                     ->color('info')
                     ->chart($this->getDatasetTrend()),
 
                 Stat::make('Documents', $totalDocuments)
                     ->description($weeklyDocuments.' this week'.($documentGrowth > 0 ? " • +{$documentGrowth}% growth" : ''))
-                    ->descriptionIcon($documentGrowth > 0 ? Heroicon::MINI_ARROW_TRENDING_UP : Heroicon::MINI_DOCUMENT_TEXT)
+                    ->descriptionIcon($documentGrowth > 0 ? Heroicon::ArrowTrendingUp : Heroicon::DocumentText)
                     ->color('primary')
                     ->chart($this->getDocumentTrend()),
 
                 Stat::make('Active API Keys', $activeApiKeys)
                     ->description($this->getApiKeyDescription($activeApiKeys))
-                    ->descriptionIcon(Heroicon::MINI_KEY)
+                    ->descriptionIcon(Heroicon::Key)
                     ->color($activeApiKeys > 0 ? 'warning' : 'gray'),
             ];
         });

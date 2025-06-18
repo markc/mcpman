@@ -4,7 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Services\LogMonitoringService;
 use App\Services\ProcessManager;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -47,12 +47,12 @@ class SystemMonitoringWidget extends BaseWidget
         return [
             Stat::make('MCP System', $systemStatus)
                 ->description($systemDescription)
-                ->descriptionIcon($systemStatus === 'Active' ? Heroicon::OUTLINE_CHECK_CIRCLE : Heroicon::OUTLINE_EXCLAMATION_TRIANGLE)
+                ->descriptionIcon($systemStatus === 'Active' ? Heroicon::OutlinedCheckCircle : Heroicon::OutlinedExclamationTriangle)
                 ->color($systemColor),
 
             Stat::make('Error Patterns', $stats['patterns_configured'] ?? 11)
                 ->description('Detection patterns configured')
-                ->descriptionIcon(Heroicon::OUTLINE_PUZZLE_PIECE)
+                ->descriptionIcon(Heroicon::OutlinedPuzzlePiece)
                 ->color('info'),
         ];
     }

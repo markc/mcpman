@@ -16,7 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\DeleteAction;
@@ -32,7 +32,7 @@ class DevelopmentEnvironmentResource extends Resource
 {
     protected static ?string $model = DevelopmentEnvironment::class;
 
-    protected static BackedEnum|string|null $navigationIcon = Heroicon::OUTLINE_CUBE;
+    protected static BackedEnum|string|null $navigationIcon = Heroicon::OutlinedCube;
 
     protected static ?string $navigationLabel = 'Dev Environments';
 
@@ -327,7 +327,7 @@ class DevelopmentEnvironmentResource extends Resource
             ])
             ->actions([
                 Action::make('start')
-                    ->icon(Heroicon::OUTLINE_PLAY)
+                    ->icon(Heroicon::OutlinedPlay)
                     ->color('success')
                     ->visible(fn (DevelopmentEnvironment $record): bool => $record->isStopped())
                     ->action(function (DevelopmentEnvironment $record) {
@@ -340,7 +340,7 @@ class DevelopmentEnvironmentResource extends Resource
                     }),
 
                 Action::make('stop')
-                    ->icon(Heroicon::OUTLINE_STOP)
+                    ->icon(Heroicon::OutlinedStop)
                     ->color('warning')
                     ->visible(fn (DevelopmentEnvironment $record): bool => $record->isRunning())
                     ->requiresConfirmation()
@@ -354,7 +354,7 @@ class DevelopmentEnvironmentResource extends Resource
                     }),
 
                 Action::make('access')
-                    ->icon(Heroicon::OUTLINE_ARROW_TOP_RIGHT_ON_SQUARE)
+                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                     ->color('info')
                     ->visible(fn (DevelopmentEnvironment $record): bool => $record->isRunning())
                     ->url(function (DevelopmentEnvironment $record): ?string {

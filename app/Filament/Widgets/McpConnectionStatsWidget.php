@@ -4,7 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Models\McpConnection;
 use App\Services\PersistentMcpManager;
-use Filament\Support\Enums\Heroicon;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Livewire\Attributes\On;
@@ -30,27 +30,27 @@ class McpConnectionStatsWidget extends BaseWidget
         return [
             Stat::make('Total Connections', $connections->count())
                 ->description('All MCP connections')
-                ->descriptionIcon(Heroicon::MINI_ARROW_TRENDING_UP)
+                ->descriptionIcon(Heroicon::ArrowTrendingUp)
                 ->color('primary'),
 
             Stat::make('Active Connections', $connections->where('status', 'active')->count())
                 ->description('Configured as active')
-                ->descriptionIcon(Heroicon::MINI_CHECK_CIRCLE)
+                ->descriptionIcon(Heroicon::CheckCircle)
                 ->color('success'),
 
             Stat::make('Manager Active', $activeInManager)
                 ->description('Actually running in manager')
-                ->descriptionIcon(Heroicon::MINI_CPU_CHIP)
+                ->descriptionIcon(Heroicon::CpuChip)
                 ->color('info'),
 
             Stat::make('Error Rate', $this->calculateErrorRate($connections))
                 ->description('Connections with errors')
-                ->descriptionIcon(Heroicon::MINI_EXCLAMATION_TRIANGLE)
+                ->descriptionIcon(Heroicon::ExclamationTriangle)
                 ->color('danger'),
 
             Stat::make('Memory Usage', $this->getMemoryUsage())
                 ->description('Current memory consumption')
-                ->descriptionIcon(Heroicon::MINI_SERVER)
+                ->descriptionIcon(Heroicon::Server)
                 ->color('warning'),
         ];
     }
