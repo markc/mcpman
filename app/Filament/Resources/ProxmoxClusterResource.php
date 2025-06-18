@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProxmoxClusterResource\Pages;
 use App\Models\ProxmoxCluster;
+use BackedEnum;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -20,16 +21,17 @@ use Filament\Tables\Columns\ProgressColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class ProxmoxClusterResource extends Resource
 {
     protected static ?string $model = ProxmoxCluster::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-server-stack';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-server-stack';
 
     protected static ?string $navigationLabel = 'Proxmox Clusters';
 
-    protected static ?string $navigationGroup = 'Proxmox Management';
+    protected static string|UnitEnum|null $navigationGroup = 'Proxmox Management';
 
     protected static ?int $navigationSort = 1;
 

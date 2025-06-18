@@ -9,8 +9,8 @@ use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 
 class ViewDevelopmentEnvironment extends ViewRecord
@@ -67,10 +67,10 @@ class ViewDevelopmentEnvironment extends ViewRecord
         ];
     }
 
-    public function infolist(Infolist $infolist): Infolist
+    public function infolist(Schema $schema): Schema
     {
-        return $infolist
-            ->schema([
+        return $schema
+            ->components([
                 Section::make('Environment Information')
                     ->schema([
                         TextEntry::make('name')

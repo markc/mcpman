@@ -6,20 +6,22 @@ use App\Models\DevelopmentEnvironment;
 use App\Models\ProxmoxCluster;
 use App\Models\ProxmoxContainer;
 use App\Models\ProxmoxVirtualMachine;
+use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use UnitEnum;
 
 class ProxmoxExecutiveDashboard extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static string $view = 'filament.pages.proxmox-executive-dashboard';
+    protected string $view = 'filament.pages.proxmox-executive-dashboard';
 
     protected static ?string $navigationLabel = 'Executive Dashboard';
 
-    protected static ?string $navigationGroup = 'Analytics';
+    protected static string|UnitEnum|null $navigationGroup = 'Analytics';
 
     protected static ?int $navigationSort = 1;
 
@@ -83,7 +85,7 @@ class ProxmoxExecutiveDashboard extends Page
 
 class ExecutiveKPIWidget extends StatsOverviewWidget
 {
-    protected static ?string $pollingInterval = '30s';
+    protected ?string $pollingInterval = '30s';
 
     protected function getStats(): array
     {
@@ -126,7 +128,7 @@ class ExecutiveKPIWidget extends StatsOverviewWidget
 
 class PlatformUsageWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Platform Usage Trends (30 Days)';
+    protected ?string $heading = 'Platform Usage Trends (30 Days)';
 
     protected static ?int $sort = 2;
 
@@ -177,7 +179,7 @@ class PlatformUsageWidget extends ChartWidget
 
 class CostAnalysisWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Cost Analysis by Environment Type';
+    protected ?string $heading = 'Cost Analysis by Environment Type';
 
     protected static ?int $sort = 3;
 
@@ -216,7 +218,7 @@ class CostAnalysisWidget extends ChartWidget
 
 class ResourceUtilizationWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Average Resource Utilization Across Clusters';
+    protected ?string $heading = 'Average Resource Utilization Across Clusters';
 
     protected static ?int $sort = 4;
 
@@ -265,7 +267,7 @@ class ResourceUtilizationWidget extends ChartWidget
 
 class EnvironmentTrendsWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Environment Lifecycle Trends';
+    protected ?string $heading = 'Environment Lifecycle Trends';
 
     protected static ?int $sort = 5;
 
@@ -311,7 +313,7 @@ class EnvironmentTrendsWidget extends ChartWidget
 
 class ClusterHealthWidget extends StatsOverviewWidget
 {
-    protected static ?string $pollingInterval = '60s';
+    protected ?string $pollingInterval = '60s';
 
     protected static ?int $sort = 6;
 
