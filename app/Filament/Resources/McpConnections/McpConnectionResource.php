@@ -15,7 +15,6 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -31,21 +30,23 @@ class McpConnectionResource extends Resource
     {
         return $schema
             ->components([
-                Section::make('Connection Information')
-                    ->description('Basic connection details and endpoint configuration')
-                    ->schema([
-                        TextInput::make('name')
-                            ->label('Connection Name')
-                            ->required()
-                            ->maxLength(255)
-                            ->helperText('Descriptive name for this MCP connection'),
+                Placeholder::make('connection_info')
+                    ->label('Connection Information')
+                    ->content('Basic connection details and endpoint configuration')
+                    ->columnSpanFull(),
 
-                        TextInput::make('endpoint_url')
-                            ->label('Endpoint URL / Command')
-                            ->helperText('For HTTP/WebSocket: URL (e.g. http://localhost:3000). For stdio: command path (e.g. /usr/bin/claude mcp serve)')
-                            ->default('/usr/bin/claude mcp serve')
-                            ->required()
-                            ->columnSpanFull(),
+                TextInput::make('name')
+                    ->label('Connection Name')
+                    ->required()
+                    ->maxLength(255)
+                    ->helperText('Descriptive name for this MCP connection'),
+
+                TextInput::make('endpoint_url')
+                    ->label('Endpoint URL / Command')
+                    ->helperText('For HTTP/WebSocket: URL (e.g. http://localhost:3000). For stdio: command path (e.g. /usr/bin/claude mcp serve)')
+                    ->default('/usr/bin/claude mcp serve')
+                    ->required()
+                    ->columnSpanFull(),
 
                         Select::make('transport_type')
                             ->label('Transport Type')
@@ -73,10 +74,12 @@ class McpConnectionResource extends Resource
                     ->columns(2)
                     ->columnSpanFull(),
 
-                Section::make('Configuration')
-                    ->description('Authentication, capabilities, and advanced settings')
-                    ->schema([
-                        KeyValue::make('auth_config')
+                Placeholder::make('configuration_header')
+                    ->label('Configuration')
+                    ->content('Authentication, capabilities, and advanced settings')
+                    ->columnSpanFull(),
+
+                KeyValue::make('auth_config')
                             ->label('Authentication Configuration')
                             ->helperText('Security credentials and authentication method')
                             ->keyLabel('Setting')
@@ -105,12 +108,13 @@ class McpConnectionResource extends Resource
                             ->keyLabel('Property')
                             ->valueLabel('Value')
                             ->columnSpanFull(),
-                    ])
-                    ->columnSpanFull(),
+                ]),
 
-                Section::make('Connection Status')
-                    ->description('Runtime information and diagnostics')
-                    ->schema([
+                Placeholder::make('connection_status_header')
+                    ->label('Connection Status')
+                    ->content('Runtime information and diagnostics')
+                    ->columnSpanFull()
+                    ->hiddenOn('create'),
                         Placeholder::make('last_connected_at')
                             ->label('Last Connected')
                             ->content(fn ($record) => $record?->last_connected_at?->diffForHumans() ?? 'Never')
@@ -120,10 +124,7 @@ class McpConnectionResource extends Resource
                             ->label('Last Error')
                             ->content(fn ($record) => $record?->last_error ?? 'None')
                             ->hiddenOn('create'),
-                    ])
-                    ->columns(2)
-                    ->columnSpanFull()
-                    ->hiddenOn('create'),
+                    ])->hiddenOn('create'),
 
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id()),

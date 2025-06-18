@@ -7,9 +7,9 @@ use Filament\Widgets\Widget;
 
 class RecommendationsWidget extends Widget
 {
-    protected string $view = 'filament.widgets.recommendations-widget';
-
     protected static ?int $sort = 3;
+
+    protected string $view = 'filament.widgets.recommendations-widget';
 
     // Polling handled by parent page
 

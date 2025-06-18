@@ -50,6 +50,28 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\McpHealthCheckService::class, function ($app) {
             return new \App\Services\McpHealthCheckService;
         });
+
+        // Register BidirectionalMcpClient as singleton
+        $this->app->singleton(\App\Services\BidirectionalMcpClient::class, function ($app) {
+            return new \App\Services\BidirectionalMcpClient;
+        });
+
+        // Register ProcessManager as singleton
+        $this->app->singleton(\App\Services\ProcessManager::class, function ($app) {
+            return new \App\Services\ProcessManager;
+        });
+
+        // Register McpProcessOrchestrator as singleton
+        $this->app->singleton(\App\Services\McpProcessOrchestrator::class, function ($app) {
+            return new \App\Services\McpProcessOrchestrator;
+        });
+
+        // Register McpHealthMonitorService as singleton
+        $this->app->singleton(\App\Services\McpHealthMonitorService::class, function ($app) {
+            return new \App\Services\McpHealthMonitorService(
+                $app->make(\App\Services\McpProcessOrchestrator::class)
+            );
+        });
     }
 
     /**

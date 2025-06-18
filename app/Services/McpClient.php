@@ -248,9 +248,29 @@ class McpClient
 
     private function sendWebSocketRequest(array $request): array
     {
-        // WebSocket implementation would go here
-        // For now, we'll throw an exception as it requires additional libraries
-        throw new \Exception('WebSocket transport not yet implemented');
+        try {
+            $transport = new WebSocketTransport($this->connection);
+
+            if (! $transport->connect()) {
+                throw new \Exception('Failed to establish WebSocket connection');
+            }
+
+            $response = $transport->sendRequest($request);
+
+            // Keep connection alive for future requests
+            // In a production environment, you might want to pool these connections
+
+            return $response;
+
+        } catch (\Exception $e) {
+            Log::error('WebSocket request failed', [
+                'connection' => $this->connection->name,
+                'method' => $request['method'] ?? 'unknown',
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
     }
 
     private function sendStdioRequest(array $request): array

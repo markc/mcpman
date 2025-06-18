@@ -56,11 +56,11 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74,#34d399,#f472b6\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" \"php artisan mcp:watch-logs --auto-fix\" \"php artisan mcp:connections start\" --names=server,queue,logs,vite,monitor,mcp"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74,#34d399\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" \"php artisan mcp:connections start\" --names=server,queue,logs,vite,mcp"
         ],
         "dev-bidirectional": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74,#34d399,#f472b6\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" \"php artisan mcp:watch-logs --auto-fix\" \"php artisan mcp:connections start && sleep infinity\" --names=server,queue,logs,vite,monitor,mcp"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74,#34d399\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" \"php artisan mcp:connections start && sleep infinity\" --names=server,queue,logs,vite,mcp"
         ],
         "test": [
             "@php artisan config:clear --ansi",
