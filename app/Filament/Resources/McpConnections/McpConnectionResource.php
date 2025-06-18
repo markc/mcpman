@@ -48,31 +48,28 @@ class McpConnectionResource extends Resource
                     ->required()
                     ->columnSpanFull(),
 
-                        Select::make('transport_type')
-                            ->label('Transport Type')
-                            ->helperText('Communication protocol for MCP connection')
-                            ->options([
-                                'stdio' => 'Standard I/O (Local process)',
-                                'http' => 'HTTP (Web service)',
-                                'websocket' => 'WebSocket (Real-time)',
-                            ])
-                            ->required()
-                            ->default('stdio')
-                            ->live(),
-
-                        Select::make('status')
-                            ->label('Connection Status')
-                            ->helperText('Current operational state')
-                            ->options([
-                                'active' => 'Active - Ready for use',
-                                'inactive' => 'Inactive - Disabled',
-                                'error' => 'Error - Needs attention',
-                            ])
-                            ->required()
-                            ->default('inactive'),
+                Select::make('transport_type')
+                    ->label('Transport Type')
+                    ->helperText('Communication protocol for MCP connection')
+                    ->options([
+                        'stdio' => 'Standard I/O (Local process)',
+                        'http' => 'HTTP (Web service)',
+                        'websocket' => 'WebSocket (Real-time)',
                     ])
-                    ->columns(2)
-                    ->columnSpanFull(),
+                    ->required()
+                    ->default('stdio')
+                    ->live(),
+
+                Select::make('status')
+                    ->label('Connection Status')
+                    ->helperText('Current operational state')
+                    ->options([
+                        'active' => 'Active - Ready for use',
+                        'inactive' => 'Inactive - Disabled',
+                        'error' => 'Error - Needs attention',
+                    ])
+                    ->required()
+                    ->default('inactive'),
 
                 Placeholder::make('configuration_header')
                     ->label('Configuration')
@@ -80,51 +77,50 @@ class McpConnectionResource extends Resource
                     ->columnSpanFull(),
 
                 KeyValue::make('auth_config')
-                            ->label('Authentication Configuration')
-                            ->helperText('Security credentials and authentication method')
-                            ->keyLabel('Setting')
-                            ->valueLabel('Value')
-                            ->default([
-                                'type' => 'bearer',
-                                'token' => '',
-                            ])
-                            ->columnSpanFull(),
+                    ->label('Authentication Configuration')
+                    ->helperText('Security credentials and authentication method')
+                    ->keyLabel('Setting')
+                    ->valueLabel('Value')
+                    ->default([
+                        'type' => 'bearer',
+                        'token' => '',
+                    ])
+                    ->columnSpanFull(),
 
-                        KeyValue::make('capabilities')
-                            ->label('MCP Capabilities')
-                            ->helperText('Features and functionality enabled for this connection')
-                            ->keyLabel('Capability')
-                            ->valueLabel('Enabled (true/false)')
-                            ->default([
-                                'tools' => 'true',
-                                'prompts' => 'true',
-                                'resources' => 'true',
-                            ])
-                            ->columnSpanFull(),
+                KeyValue::make('capabilities')
+                    ->label('MCP Capabilities')
+                    ->helperText('Features and functionality enabled for this connection')
+                    ->keyLabel('Capability')
+                    ->valueLabel('Enabled (true/false)')
+                    ->default([
+                        'tools' => 'true',
+                        'prompts' => 'true',
+                        'resources' => 'true',
+                    ])
+                    ->columnSpanFull(),
 
-                        KeyValue::make('metadata')
-                            ->label('Additional Metadata')
-                            ->helperText('Custom properties and configuration options')
-                            ->keyLabel('Property')
-                            ->valueLabel('Value')
-                            ->columnSpanFull(),
-                ]),
+                KeyValue::make('metadata')
+                    ->label('Additional Metadata')
+                    ->helperText('Custom properties and configuration options')
+                    ->keyLabel('Property')
+                    ->valueLabel('Value')
+                    ->columnSpanFull(),
 
                 Placeholder::make('connection_status_header')
                     ->label('Connection Status')
                     ->content('Runtime information and diagnostics')
                     ->columnSpanFull()
                     ->hiddenOn('create'),
-                        Placeholder::make('last_connected_at')
-                            ->label('Last Connected')
-                            ->content(fn ($record) => $record?->last_connected_at?->diffForHumans() ?? 'Never')
-                            ->hiddenOn('create'),
 
-                        Placeholder::make('last_error')
-                            ->label('Last Error')
-                            ->content(fn ($record) => $record?->last_error ?? 'None')
-                            ->hiddenOn('create'),
-                    ])->hiddenOn('create'),
+                Placeholder::make('last_connected_at')
+                    ->label('Last Connected')
+                    ->content(fn ($record) => $record?->last_connected_at?->diffForHumans() ?? 'Never')
+                    ->hiddenOn('create'),
+
+                Placeholder::make('last_error')
+                    ->label('Last Error')
+                    ->content(fn ($record) => $record?->last_error ?? 'None')
+                    ->hiddenOn('create'),
 
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id()),
