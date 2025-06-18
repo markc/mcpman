@@ -11,12 +11,12 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
-use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -37,75 +37,71 @@ class DatasetResource extends Resource
                     ->label('Dataset Information')
                     ->content('Basic dataset details and identification')
                     ->columnSpanFull(),
-                        TextInput::make('name')
-                            ->label('Dataset Name')
-                            ->required()
-                            ->maxLength(255)
-                            ->helperText('The dataset name will auto-generate the slug')
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state))),
+                TextInput::make('name')
+                    ->label('Dataset Name')
+                    ->required()
+                    ->maxLength(255)
+                    ->helperText('The dataset name will auto-generate the slug')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state))),
 
-                        TextInput::make('slug')
-                            ->label('URL Slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->helperText('URL-friendly identifier for the dataset')
-                            ->unique(ignoreRecord: true),
+                TextInput::make('slug')
+                    ->label('URL Slug')
+                    ->required()
+                    ->maxLength(255)
+                    ->helperText('URL-friendly identifier for the dataset')
+                    ->unique(ignoreRecord: true),
 
-                        Textarea::make('description')
-                            ->label('Description')
-                            ->helperText('Detailed description of the dataset purpose and contents')
-                            ->rows(3)
-                            ->columnSpanFull(),
-                    ]),
+                Textarea::make('description')
+                    ->label('Description')
+                    ->helperText('Detailed description of the dataset purpose and contents')
+                    ->rows(3)
+                    ->columnSpanFull(),
 
                 Placeholder::make('dataset_config_header')
                     ->label('Dataset Configuration')
                     ->content('Data format and processing settings')
                     ->columnSpanFull(),
-                        Select::make('type')
-                            ->label('Data Format')
-                            ->helperText('Select the primary data format for this dataset')
-                            ->options([
-                                'json' => 'JSON - Structured data',
-                                'csv' => 'CSV - Tabular data',
-                                'xml' => 'XML - Markup data',
-                                'yaml' => 'YAML - Configuration data',
-                                'text' => 'Text - Plain text data',
-                            ])
-                            ->required()
-                            ->default('json'),
+                Select::make('type')
+                    ->label('Data Format')
+                    ->helperText('Select the primary data format for this dataset')
+                    ->options([
+                        'json' => 'JSON - Structured data',
+                        'csv' => 'CSV - Tabular data',
+                        'xml' => 'XML - Markup data',
+                        'yaml' => 'YAML - Configuration data',
+                        'text' => 'Text - Plain text data',
+                    ])
+                    ->required()
+                    ->default('json'),
 
-                        Select::make('status')
-                            ->label('Processing Status')
-                            ->helperText('Current state of the dataset')
-                            ->options([
-                                'active' => 'Active - Ready for use',
-                                'processing' => 'Processing - Being updated',
-                                'archived' => 'Archived - Read-only',
-                            ])
-                            ->required()
-                            ->default('active'),
-                    ]),
+                Select::make('status')
+                    ->label('Processing Status')
+                    ->helperText('Current state of the dataset')
+                    ->options([
+                        'active' => 'Active - Ready for use',
+                        'processing' => 'Processing - Being updated',
+                        'archived' => 'Archived - Read-only',
+                    ])
+                    ->required()
+                    ->default('active'),
 
                 Placeholder::make('schema_metadata_header')
                     ->label('Schema & Metadata')
                     ->content('Data structure and custom properties')
                     ->columnSpanFull(),
-                        KeyValue::make('schema')
-                            ->label('Schema Definition')
-                            ->helperText('Define the structure and data types for your dataset')
-                            ->keyLabel('Field Name')
-                            ->valueLabel('Data Type')
-                            ->columnSpanFull(),
+                KeyValue::make('schema')
+                    ->label('Schema Definition')
+                    ->helperText('Define the structure and data types for your dataset')
+                    ->keyLabel('Field Name')
+                    ->valueLabel('Data Type')
+                    ->columnSpanFull(),
 
-                        KeyValue::make('metadata')
-                            ->label('Custom Metadata')
-                            ->helperText('Additional properties and configuration options')
-                            ->keyLabel('Property')
-                            ->valueLabel('Value')
-                            ->columnSpanFull(),
-                    ])
+                KeyValue::make('metadata')
+                    ->label('Custom Metadata')
+                    ->helperText('Additional properties and configuration options')
+                    ->keyLabel('Property')
+                    ->valueLabel('Value')
                     ->columnSpanFull(),
 
                 Hidden::make('user_id')
